@@ -1,0 +1,179 @@
+# Legacy AI — Resource Manifest
+# All verified infrastructure services, endpoints, and access methods.
+# Last verified: 2026-04-07 (receipt-verified audit)
+# This file is READ-ONLY for agents.
+
+compute:
+  local:
+    mac_mini_m4:
+      role: primary_workstation
+      specs: "24GB RAM, 10 cores, 500GB internal"
+      tailscale_ip: 100.64.14.51
+      tailscale_name: douglass-mac-mini-1
+    m4_air:
+      role: secondary
+      specs: "16GB RAM, 256GB drive"
+    macbook_pro_2017:
+      role: tertiary
+
+  cloud:
+    digitalocean:
+      droplet: ubuntu-s-2vcpu-2gb-nyc3-01
+      role: always_on_spine
+      plan: "$6/mo (resized)"
+      tailscale_ip: 100.108.138.101
+      ipv4: 167.99.62.204
+    railway:
+      plan: pro
+      cost: "$20/mo"
+      projects: 7
+      headroom: "23GB RAM, 23 vCPU unused"
+    vercel:
+      plan: pro
+      cost: "$20/mo"
+      projects: 10
+    gcp_free_tier:
+      cloud_run: "2M requests/mo"
+      firestore: "1GB, 50K reads/day"
+      bigquery: "10GB storage, 1TB queries/mo"
+      cloud_storage: "5GB standard"
+      monitoring: "basic metrics free"
+
+storage:
+  local:
+    sandisk_1tb:
+      mount: /Volumes/SanDisk1Tb
+      role: active_development
+      capacity: 931GB
+      free: 881GB
+    storage_drive:
+      mount: /Volumes/Storage
+      role: secondary_projects
+      capacity: 931GB
+      free: 664GB
+    t7:
+      mount: /Volumes/T7
+      role: ml_models_datasets
+      capacity: 931GB
+      free: 101GB
+      warning: "90% full — needs triage"
+
+  cloud:
+    google_drive:
+      plan: "Google AI Pro (5TB)"
+      cost: "$19.99/mo (already paid)"
+      used: 14GB
+      free: 4986GB
+      role: tier_3_backbone
+    huggingface:
+      plan: pro
+      private: 1TB
+      public: 11.2TB
+      role: ml_assets
+    icloud:
+      plan: "2TB"
+      role: device_sync
+    gcs_bucket:
+      role: governance_backup
+      free_tier: 5GB
+
+ai_services:
+  vertex_ai_search:
+    project: legacyai-marketplace
+    location: global
+    datastore_id: legacy-ai-curated-knowledge
+    datastore_name: "projects/883551004716/locations/global/collections/default_collection/dataStores/legacy-ai-curated-knowledge"
+    display_name: "Legacy AI Curated Knowledge"
+    status: provisioned
+    provisioned_date: "2026-04-07"
+    credit_source: "Gen App Builder ($1,000 SKU-locked, expires 2026-04-12)"
+    post_credit_cost: "~$0.002/query"
+  dialogflow_cx:
+    project: legacyai-marketplace
+    location: us-central1
+    agent_id: "3318aedb-ec96-4f53-8267-cf946ee74c20"
+    agent_name: "Legacy AI Service Bot"
+    console: "https://dialogflow.cloud.google.com/cx/projects/legacyai-marketplace/locations/us-central1/agents/3318aedb-ec96-4f53-8267-cf946ee74c20"
+    intents:
+      - "Default Welcome Intent"
+      - "Service Inquiry"
+    status: provisioned
+    provisioned_date: "2026-04-07"
+    credit_source: "Dialogflow CX ($600 SKU-locked, expires 2026-04-12)"
+    post_credit_cost: "basic intents free, knowledge queries pennies"
+
+databases:
+  supabase:
+    plan: pro
+    cost: "$65/mo (base $25 + 4 DBs x $10)"
+    org: LegacyAI
+    databases:
+      - name: Legacy-Field-Command
+        region: us-east-2
+        status: active
+      - name: CRM-AI-Pro
+        region: us-east-2
+        status: active
+      - name: Legacy AI Agent Studio
+        region: us-east-1
+        status: active
+      - name: KindHome
+        region: us-east-2
+        status: active
+  pinecone:
+    plan: free
+    indexes: 4
+    role: vector_search
+
+networking:
+  tailscale:
+    plan: free
+    devices: 7
+    limit: 100
+
+automation:
+  ifttt:
+    plan: pro
+    cost: "$3/mo"
+    role: automation_backbone
+
+version_control:
+  github:
+    account: CaptainPhantasy
+    org: LegacyAI-FloydsLabs
+    copilot: pro
+    copilot_cost: "$10/mo"
+
+monitoring:
+  uptimerobot:
+    plan: free
+    role: dead_mans_switch
+
+domains:
+  legacyai_space:
+    workspace: active
+    cost: "$7.20/mo"
+    role: primary_business_domain
+
+
+# =============================================================================
+# ## Mandatory execution contract
+# For EACH requested item:
+# 1) Show exact action taken
+# 2) Show direct evidence (file/line/command/output)
+# 3) Show verification result
+# 4) Mark status only after proof
+#
+# ## Forbidden behaviors
+# - Declaring "done" without evidence
+# - Collapsing multiple requested items into one vague summary
+# - Skipping failed steps without explicit blocker report
+#
+# ## Required output structure
+# A) Requested items checklist
+# B) Per-item evidence ledger
+# C) Verification receipts
+# D) Completeness matrix (item -> done/blocked -> evidence)
+#
+# ## Hard gate
+# If any requested item has no evidence row, final status MUST be INCOMPLETE.

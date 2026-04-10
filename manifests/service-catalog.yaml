@@ -1,0 +1,161 @@
+# Legacy AI — Service Catalog
+# All active subscriptions with verified costs.
+# Receipt-verified 2026-04-07. READ-ONLY for agents.
+
+monthly_total: "$259.38 (post-consolidation target)"
+current_total: "$493.36 (pre-consolidation)"
+
+active:
+  - service: Anthropic Claude
+    plan: Max 20x
+    cost: "$200.00/mo"
+    purpose: primary AI brain
+    status: keep
+
+  - service: Supabase
+    plan: Pro (LegacyAI org)
+    cost: "$65.00/mo (base $25 + 4 DBs x $10)"
+    purpose: development databases (none in production)
+    status: EXIT — moving to OrbStack/local. Export Legacy-Field-Command data first.
+
+  - service: ElevenLabs
+    plan: Creator
+    cost: "$22.00/mo"
+    purpose: voice and TTS
+    status: keep
+
+  - service: Railway
+    plan: Pro
+    cost: "$20.00/mo"
+    purpose: 7 hosted projects
+    status: keep
+
+  - service: Vercel
+    plan: Pro
+    cost: "$20.00/mo"
+    purpose: 10 hosted projects + CDN
+    status: keep
+
+  - service: Google AI Pro
+    plan: AI Pro (via Apple)
+    cost: "$19.99/mo"
+    purpose: 5TB storage, 1K AI credits, NotebookLM, Dev Program Premium
+    status: keep
+
+  - service: GitHub Copilot
+    plan: Pro
+    cost: "$10.00/mo"
+    purpose: daily code assistance
+    status: keep
+
+  - service: GitHub Organization
+    plan: Pro
+    cost: "$10.00/mo"
+    purpose: LegacyAI-FloydsLabs org
+    status: keep (hosts .supercache/ repo)
+
+  - service: HuggingFace
+    plan: Pro
+    cost: "$9.00/mo"
+    purpose: 12TB storage, ZeroGPU, inference
+    status: keep
+
+  - service: Google Workspace (legacyai.space)
+    cost: "$7.20/mo"
+    purpose: primary business domain
+    status: keep
+
+  - service: Google Workspace (floydslabs.com)
+    cost: "$7.20/mo"
+    purpose: Floyd's Labs email accounts + storage
+    status: keep
+
+  - service: DigitalOcean
+    plan: "1 droplet (resized)"
+    cost: "$6.00/mo (target)"
+    purpose: always-on spine + Tailscale relay
+    status: resize from $42
+
+  - service: IFTTT
+    plan: Pro
+    cost: "$3.00/mo"
+    purpose: automation (absorbs Zapier)
+    status: keep
+
+  - service: Tile Premium
+    cost: "$2.99/mo"
+    purpose: device tracking
+    status: keep
+
+gcp_provisioned:
+  - service: Vertex AI Search (Discovery Engine)
+    project: legacyai-marketplace
+    cost: "~$0.002/query after credit expiry"
+    credit: "$1,000 Gen App Builder (expires 2026-04-12)"
+    purpose: curated knowledge retrieval for agents
+    status: provisioned 2026-04-07
+
+  - service: Dialogflow CX
+    project: legacyai-marketplace
+    cost: "basic intents free, knowledge queries pennies"
+    credit: "$600 Dialogflow CX (expires 2026-04-12)"
+    purpose: customer-facing chatbot
+    status: provisioned 2026-04-07
+
+annual_prepaid:
+  - service: ZAI
+    cost: "$250/yr ($20.83/mo equiv)"
+    purpose: heavy coding workhorse
+
+  - service: MiniMax
+    cost: "$200/yr ($16.67/mo equiv)"
+    purpose: heavy coding workhorse
+
+pending_cancellation:
+  - service: Zapier
+    cost: "$29.99/mo"
+    reason: IFTTT Pro replaces it
+    action: migrate automations first
+
+  - service: Supabase Pro
+    cost: "$65.00/mo"
+    reason: all projects in development, none in production. Moving to OrbStack/local.
+    action: export Legacy-Field-Command data (7,600 rows), then cancel
+
+  - service: Hostinger
+    cost: "$13.99/mo"
+    reason: Vercel Pro absorbs hosting
+    action: deploy legacyai.space on Vercel first
+
+  - service: Docker Desktop
+    cost: "$11.00/mo"
+    reason: CLI is free for individuals
+    action: verify docker CLI works after cancel
+
+  - service: Spotify Premium
+    cost: "$10.99/mo"
+    reason: trial ending, not business-critical
+    action: cancel before payment starts
+
+
+# =============================================================================
+# ## Mandatory execution contract
+# For EACH requested item:
+# 1) Show exact action taken
+# 2) Show direct evidence (file/line/command/output)
+# 3) Show verification result
+# 4) Mark status only after proof
+#
+# ## Forbidden behaviors
+# - Declaring "done" without evidence
+# - Collapsing multiple requested items into one vague summary
+# - Skipping failed steps without explicit blocker report
+#
+# ## Required output structure
+# A) Requested items checklist
+# B) Per-item evidence ledger
+# C) Verification receipts
+# D) Completeness matrix (item -> done/blocked -> evidence)
+#
+# ## Hard gate
+# If any requested item has no evidence row, final status MUST be INCOMPLETE.

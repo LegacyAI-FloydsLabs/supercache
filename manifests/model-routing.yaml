@@ -1,0 +1,87 @@
+# Legacy AI — Model Routing Configuration
+# Which LLM to use for which task type.
+# This file is READ-ONLY for agents.
+
+tiers:
+  reasoning:
+    provider: anthropic
+    model: claude-opus-4-6
+    monthly_cost: "$200/mo (Max plan)"
+    use_for:
+      - architecture_and_system_design
+      - planning_and_decomposition
+      - complex_debugging
+      - code_review
+      - multi_file_refactoring
+      - governance_and_audit
+    notes: "Primary brain. Use for anything requiring deep reasoning or cross-file understanding."
+
+  implementation:
+    providers:
+      - provider: zai
+        model: default
+        annual_cost: "$250/yr prepaid"
+        use_for:
+          - coding_and_implementation
+          - bulk_code_generation
+          - test_writing
+          - documentation_generation
+      - provider: minimax
+        model: default
+        annual_cost: "$200/yr prepaid"
+        use_for:
+          - coding_and_implementation
+          - backup_to_zai
+    notes: "Heavy lifting. Use for implementation work after Claude has planned it."
+
+  quick:
+    provider: google
+    model: gemini
+    monthly_cost: "1,000 monthly AI credits (included in Google AI Pro $19.99/mo)"
+    use_for:
+      - simple_lookups
+      - formatting_and_conversion
+      - quick_questions
+      - light_code_generation
+    notes: "Credits expire monthly if unused. Use these for low-stakes tasks."
+
+  free:
+    providers:
+      - provider: huggingface
+        via: [novita, groq]
+        monthly_cost: "$2/mo inference (included in HF Pro $9/mo)"
+        use_for:
+          - experimentation
+          - non_critical_tasks
+          - model_testing
+    notes: "ZeroGPU gives 25 min/day of H200. Good for testing SLMs."
+
+routing_rules:
+  - "If the task requires understanding multiple files or architectural decisions → reasoning tier"
+  - "If the task is writing code to a known spec → implementation tier"
+  - "If the task is a quick lookup or simple formatting → quick tier"
+  - "If the task is experimental or non-critical → free tier"
+  - "When in doubt, start with reasoning tier to plan, then hand off to implementation tier"
+
+
+# =============================================================================
+# ## Mandatory execution contract
+# For EACH requested item:
+# 1) Show exact action taken
+# 2) Show direct evidence (file/line/command/output)
+# 3) Show verification result
+# 4) Mark status only after proof
+#
+# ## Forbidden behaviors
+# - Declaring "done" without evidence
+# - Collapsing multiple requested items into one vague summary
+# - Skipping failed steps without explicit blocker report
+#
+# ## Required output structure
+# A) Requested items checklist
+# B) Per-item evidence ledger
+# C) Verification receipts
+# D) Completeness matrix (item -> done/blocked -> evidence)
+#
+# ## Hard gate
+# If any requested item has no evidence row, final status MUST be INCOMPLETE.

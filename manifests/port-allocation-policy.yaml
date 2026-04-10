@@ -1,0 +1,70 @@
+# Port Allocation Policy
+
+forbidden:
+  - 3000   # Next.js, Express, Vite, CRA
+  - 3001   # Next.js alt, Storybook
+  - 3002   # Next.js alt
+  - 4000   # GraphQL, Firebase
+  - 4200   # Angular CLI
+  - 5000   # Flask, macOS AirPlay
+  - 5173   # Vite
+  - 5174   # Vite alt
+  - 5500   # VS Code Live Server
+  - 8000   # Django, FastAPI
+  - 8080   # Tomcat, Spring Boot, nginx
+  - 8081   # Spring Boot alt
+  - 8443   # HTTPS alt
+  - 8888   # Jupyter
+  - 9000   # PHP-FPM, SonarQube
+  - 9090   # Prometheus
+
+allocated:
+  - port: 8788
+    service: Floyd_OpenFloyd
+  - port: 9527
+    service: Terminal Control Center
+  - port: 4040
+    service: ngrok inspection
+  - port: 9222
+    service: Chrome DevTools Protocol
+  - port: 5432
+    service: PostgreSQL local
+
+available: 10000-65535
+
+claims_ledger: /Volumes/SanDisk1Tb/SSOT/port-registry.json
+
+rules:
+  - An official port must be claimed in port-registry.json BEFORE binding.
+  - Read port-registry.json first. If your port is taken, pick another.
+  - Write your claim to port-registry.json, then verify with lsof -i :<port>.
+  - Record the claimed port in your project FLOYD.md.
+  - Existing projects on forbidden ports must change on first agent contact.
+  - When replacing a forbidden port, update the code, update FLOYD.md, mark old port cleared in port-registry.json.
+  - An agent may only kill its own specifically claimed port per project.
+  - No mass port kill on any port besides the agent's claimed port without Douglas Talley's explicit order.
+  - Do not obligate Douglas for any manual port management. The system manages itself.
+
+
+
+# =============================================================================
+# ## Mandatory execution contract
+# For EACH requested item:
+# 1) Show exact action taken
+# 2) Show direct evidence (file/line/command/output)
+# 3) Show verification result
+# 4) Mark status only after proof
+#
+# ## Forbidden behaviors
+# - Declaring "done" without evidence
+# - Collapsing multiple requested items into one vague summary
+# - Skipping failed steps without explicit blocker report
+#
+# ## Required output structure
+# A) Requested items checklist
+# B) Per-item evidence ledger
+# C) Verification receipts
+# D) Completeness matrix (item -> done/blocked -> evidence)
+#
+# ## Hard gate
+# If any requested item has no evidence row, final status MUST be INCOMPLETE.
