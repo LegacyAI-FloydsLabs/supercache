@@ -32,9 +32,9 @@ for mount in /Volumes/SanDisk1Tb /Volumes/Storage; do
         [ -d "$project" ] || continue
         name="$(basename "$project")"
 
-        # Skip non-project dirs
+        # Skip non-project dirs and untouchable zones
         case "$name" in
-            Applications|InferenceCache|Library|LAIAS_AGENT_OUTPUT|SSOT|archive|.*) continue ;;
+            Applications|InferenceCache|Library|LAIAS_AGENT_OUTPUT|SSOT|archive|PSI|.*) continue ;;
         esac
 
         CHECKED=$((CHECKED + 1))
