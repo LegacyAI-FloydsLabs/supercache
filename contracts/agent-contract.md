@@ -1,6 +1,6 @@
 # Agent Contract
-**Version:** 1.0.0
-**Governance:** .supercache/ v1.0.0
+**Version:** 1.1.0
+**Governance:** .supercache/ v1.1.0
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs every AI agent operating under Legacy AI governance.
@@ -20,6 +20,47 @@ Complete every step below before making any change to any file. No exceptions.
 6. Read `.supercache/manifests/port-allocation-policy.yaml` — NEVER bind to port 3000 or any other forbidden port. The project's `FLOYD.md` states which port is claimed. If the project is on a forbidden port, change it now.
 7. Read `.supercache/contracts/execution-contract.md` — this defines how you prove your work. You will be held to it.
 8. Read `.supercache/manifests/model-routing.yaml` — this tells you which LLM to use for which task type.
+
+---
+
+## Drive Topology
+
+| Drive        | Mount                                           | Role                                                   | Agent Access                             |
+|--------------|-------------------------------------------------|--------------------------------------------------------|------------------------------------------|
+| SanDisk1Tb   | `/Volumes/SanDisk1Tb`                           | Active development, SSOT, .supercache/ canonical copy  | Read + Write (project dirs only)         |
+| Storage      | `/Volumes/Storage`                              | Secondary projects, tools, skills library, MCP servers | Read + Write (project dirs only)         |
+| T7           | `/Volumes/T7`                                   | ML models, datasets, Time Machine backups              | Read only — 90% capacity, triage pending |
+| Google Drive | `~/Library/CloudStorage/GoogleDrive-*/My Drive` | Cloud backbone — 2TB allocated to agent operations            | Read only unless explicitly instructed   |
+
+**If a drive is not mounted**, do not assume it is gone. Report the blocker. Do not skip work that depends on it.
+
+**Google Drive allocation:** 2TB of the 5TB plan is allocated to Legacy AI agent operations (`Floyd_Ecosystem/`). The remaining 3TB is Douglas Talley's personal space. Do not create, modify, or organize anything outside `Floyd_Ecosystem/`.
+
+| Google Drive Path                | Purpose                                                    |
+|----------------------------------|------------------------------------------------------------|
+| `Floyd_Ecosystem/supercache/`    | Cloud-backed .supercache/ (canonical when GDFS is mounted) |
+| `Floyd_Ecosystem/archives/`      | Archived projects moved off local drives                   |
+| `Floyd_Ecosystem/workbench/`     | Copies of off-limits repos for safe parallel work          |
+| `Floyd_Ecosystem/data_lake/`     | Datasets, exports, bulk data                               |
+| `Floyd_Ecosystem/assets/`        | Images, media, design files                                |
+| `Floyd_Ecosystem/state_backups/` | Session state and checkpoint backups                       |
+| `Floyd_Ecosystem/log_archives/`  | Rotated logs from all drives                               |
+
+---
+
+## Skills Library
+
+**Location:** `/Volumes/Storage/skillsdump/library/`
+**Count:** 357 skills
+**Access:** Read-only. Do not modify, rename, or delete any skill file.
+
+The skills library contains reusable agent skill definitions. To use a skill:
+1. Browse `/Volumes/Storage/skillsdump/library/` to find the skill by name.
+2. Read the skill's directory for its `SKILL.md` or equivalent entry point.
+3. Follow the skill's instructions exactly.
+4. Do not copy skills into the project directory. Reference them in place.
+
+**If the Storage drive is not mounted**, the skills library is unavailable. Report it as a blocker. Do not attempt to recreate skills from memory.
 
 ---
 
@@ -49,10 +90,13 @@ The sole write path: Douglas Talley → GitHub PR → merge → git pull to this
 
 ## Where You Do NOT Write
 
-| Location                                                                   | Reason                                                                        |
-|----------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| `.supercache/` (any file, any subdirectory)                                | Global governance — READ-ONLY for all agents, hooks, and automations          |
-| Any path listed in the project's `FLOYD.md` "Where You Do NOT Write" table | Project-specific exclusions — the project owner has declared these off-limits |
+| Location                                                                   | Reason                                                               |
+|----------------------------------------------------------------------------|----------------------------------------------------------------------|
+| `.supercache/` (any file, any subdirectory)                                | Global governance — READ-ONLY for all agents, hooks, and automations |
+| `/Volumes/Storage/skillsdump/`                                             | Skills library — READ-ONLY reference material                        |
+| `/Volumes/T7/`                                                             | ML models and datasets — read-only, 90% capacity                     |
+| Google Drive outside `Floyd_Ecosystem/`                                    | Douglas Talley's personal space — 3TB reserved                       |
+| Any path listed in the project's `FLOYD.md` "Where You Do NOT Write" table | Project-specific exclusions declared by the project owner            |
 
 If you write to `.supercache/`, you have corrupted the governance layer. There is no undo. There is no forgiveness.
 
