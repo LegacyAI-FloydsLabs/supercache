@@ -36,6 +36,8 @@ Complete every step below before making any change to any file. No exceptions.
 
 **Google Drive allocation:** 2TB of the 5TB plan is allocated to Legacy AI agent operations (`Floyd_Ecosystem/`). The remaining 3TB is Douglas Talley's personal space. Do not create, modify, or organize anything outside `Floyd_Ecosystem/`.
 
+**Skill:** Load `/Volumes/Storage/skillsdump/library/google-drive/SKILL.md` before any Google Drive operation. It contains the mount path, access rules, failure modes, and common operations.
+
 | Google Drive Path                | Purpose                                                    |
 |----------------------------------|------------------------------------------------------------|
 | `Floyd_Ecosystem/supercache/`    | Cloud-backed .supercache/ (canonical when GDFS is mounted) |
