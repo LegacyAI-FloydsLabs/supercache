@@ -2,8 +2,15 @@
 **Version:** {{VERSION}}
 **Initialized:** {{DATE}}
 **Governance:** .supercache/ v{{VERSION}}
+**Port:** {{PORT}} (claimed in port-registry.json)
+**Drive:** {{DRIVE}}
+**Path:** {{PROJECT_PATH}}
 
-> **Compliance Notice:** This file must match the template at `.supercache/templates/floyd-md-template.md`. If you are an agent reading this file and it is missing sections from the template, edit this file to add them. Preserve all project-specific content in the "Project-Specific Context" section below. The template is the spec. This file is the implementation. Make them match.
+> **Compliance Notice:** This file must match the template at
+> `.supercache/templates/floyd-md-template.md`. If you are an agent reading
+> this file and it is missing sections from the template, edit this file to
+> add them. Preserve all project-specific content below. The template is the
+> spec. This file is the implementation. Make them match.
 
 ---
 
@@ -12,58 +19,170 @@
 You are working on **{{PROJECT_NAME}}**, a Legacy AI project.
 
 ### Before You Start
-1. Read this file completely.
-2. Read `.supercache/READONLY` — you MUST NOT write to .supercache/.
-3. Check `SSOT/README.md` for current project state.
-4. Check `Issues/README.md` for open issues.
-5. Read `.supercache/manifests/port-allocation-policy.yaml` — NEVER use port 3000, 5000, 8000, 8080, or any other forbidden port. Claim a port in `/Volumes/SanDisk1Tb/SSOT/port-registry.json` before binding.
+1. Read this file completely. Do not skim. Every section constrains your behavior.
+2. Read `.supercache/READONLY` — you MUST NOT write to `.supercache/`.
+3. Read `SSOT/README.md` for current project state.
+4. Read `Issues/README.md` for open issues.
+5. Read `.supercache/manifests/port-allocation-policy.yaml` — NEVER use port 3000, 5000, 8000, 8080, or any other forbidden port. This project uses port **{{PORT}}**. Do not change it without Douglas Talley's explicit approval.
+6. Read `.supercache/contracts/execution-contract.md` — this governs how you prove your work.
+7. Read `.supercache/manifests/model-routing.yaml` — this tells you which LLM to use for what.
 
 ### Governance Location
 ```
 .supercache/ → {{SUPERCACHE_PATH}}
 ```
-
-This directory contains global templates, contracts, manifests, and routing config. It is **READ-ONLY**. Do not create, modify, or delete any file there.
+This directory contains global templates, contracts, manifests, and routing config.
+It is **READ-ONLY**. Do not create, modify, or delete any file there.
 
 ### Where You Write
-- `SSOT/` — project status, decisions, findings
-- `Issues/` — bugs, blockers, tasks
-- `.floyd/` — agent working state, session logs, runtime cache
-- Project source files — your actual work
 
-### Execution Contract
-Before claiming any task complete, provide:
-1. Exact action taken
-2. Direct evidence (file/line/command/output)
-3. Verification result
-4. Status only after proof
+| Location             | Purpose                                          | Example                                         |
+|----------------------|--------------------------------------------------|-------------------------------------------------|
+| `SSOT/`              | Project status, decisions, findings              | `SSOT/README.md`, `SSOT/decision-log.md`        |
+| `Issues/`            | Bugs, blockers, tasks                            | `Issues/README.md`, `Issues/001-description.md` |
+| `.floyd/`            | Agent working state, session logs, runtime cache | `.floyd/agent_log.jsonl`                        |
+| Project source files | Your actual work                                 | Any file in the project tree not listed below   |
 
-See `.supercache/contracts/execution-contract.md` for full details.
+### Where You Do NOT Write
 
-### Model Routing
-See `.supercache/manifests/model-routing.yaml` for which LLM to use for which task type.
-
-### Available Services
-See `.supercache/manifests/resource-manifest.yaml` for all available infrastructure.
-
-### Port Allocation
-Ports 3000, 5000, 8000, 8080, and all others in `.supercache/manifests/port-allocation-policy.yaml` are forbidden. Use only ports from the available range (10000-65535). Claim your port in `/Volumes/SanDisk1Tb/SSOT/port-registry.json` before binding. Verify with `lsof -i :<port>`. If this project is on a forbidden port, change it now.
+| Location          | Reason                                       |
+|-------------------|----------------------------------------------|
+| `.supercache/`    | Global governance — READ-ONLY for all agents |
+| <!-- ADD HERE --> | <!-- Project-specific no-write zones -->     |
 
 ---
 
-## Project-Specific Context
+## Project Identity
 
-<!-- Add project-specific information below this line -->
-<!-- This section is the ONLY part of FLOYD.md that should be customized per project -->
+| Field                | Value                                                                   |
+|----------------------|-------------------------------------------------------------------------|
+| **Name**             | {{PROJECT_NAME}}                                                        |
+| **Purpose**          | <!-- One sentence. What this project does and why it exists. -->        |
+| **Primary Language** | <!-- e.g. TypeScript (ES2022, strict), Python 3.12, Go 1.23 -->         |
+| **Runtime**          | <!-- e.g. Node.js ≥ 22.0.0, Python 3.12+, N/A for CLI -->               |
+| **Module System**    | <!-- e.g. ESM, CommonJS, Go modules, N/A -->                            |
+| **Framework**        | <!-- e.g. FastAPI, Express, Next.js 14, React, None -->                 |
+| **Database**         | <!-- e.g. SQLite, PostgreSQL via Prisma, None -->                       |
+| **Port**             | **{{PORT}}** — claimed in `/Volumes/SanDisk1Tb/SSOT/port-registry.json` |
+| **Repository**       | <!-- e.g. github.com/org/repo or 'None — not yet initialized' -->       |
+| **Current Phase**    | <!-- e.g. Active development, Production, Archived, Prototype -->       |
 
-**Purpose:**
+---
 
-**Tech Stack:**
+## Project Structure
 
-**Key Files:**
+<!-- Replace this entire block with the actual directory tree. -->
+<!-- Every entry must have a one-line annotation explaining what it is. -->
+<!-- Do not list node_modules, .git, or build cache directories. -->
 
-**Current Phase:**
+```
+{{PROJECT_NAME}}/
+├── src/                          # Source code root
+│   └── index.ts                  # Entry point
+├── tests/                        # Test files
+├── SSOT/                         # Project status and decisions
+├── Issues/                       # Bug and task tracking
+├── .floyd/                       # Agent working state
+├── .env                          # Environment variables (DO NOT COMMIT)
+├── .env.example                  # Environment variable template
+└── FLOYD.md                      # This file
+```
 
+---
+
+## Build & Verify Commands
+
+<!-- Every command must be copy-pasteable from the project root. -->
+<!-- Every command must have an expected result so the agent knows pass/fail. -->
+<!-- If a command does not apply, write 'N/A — [reason]' in the Expected Result column. -->
+
+| Action         | Command                                                        | Expected Result             |
+|----------------|----------------------------------------------------------------|-----------------------------|
+| **Type check** | <!-- e.g. npm run typecheck, go vet ./..., mypy src/ -->       | Exit 0, no errors           |
+| **Build**      | <!-- e.g. npm run build, go build ./..., python -m build -->   | Exit 0                      |
+| **Test**       | <!-- e.g. npm test, go test ./..., pytest -->                  | Exit 0, all tests pass      |
+| **Lint**       | <!-- e.g. npm run lint, golangci-lint run, ruff check -->      | Exit 0                      |
+| **Start**      | <!-- e.g. PORT={{PORT}} node dist/index.js -->                 | Service up on port {{PORT}} |
+| **Dev**        | <!-- e.g. npm run dev, go run ., uvicorn app:main --reload --> | Live reload active          |
+
+### Verification sequence after any change:
+```bash
+# Replace with actual commands. All must exit 0.
+# Example: npm run typecheck && npm run lint && npm test && npm run build
+```
+
+---
+
+## Port Allocation
+
+<!-- If this project does not bind a port, replace the table with: -->
+<!-- "This project is a CLI/library/script. No port binding. No claim needed." -->
+
+| Port         | Service                                   | Status                              |
+|--------------|-------------------------------------------|-------------------------------------|
+| **{{PORT}}** | <!-- e.g. HTTP server, dashboard, API --> | **CLAIMED** in `port-registry.json` |
+
+<!-- Add conflict ports if known -->
+<!-- Example row: | 8787 | OrbStack (system) — DO NOT USE | Conflict | -->
+
+**Rules:**
+- This project runs on port **{{PORT}}**. That port is claimed in `/Volumes/SanDisk1Tb/SSOT/port-registry.json`.
+- Do not change the port without Douglas Talley's explicit approval.
+- Do not bind to any port in the forbidden list (see `.supercache/manifests/port-allocation-policy.yaml`).
+- Verify before starting: `lsof -i :{{PORT}}` — if something else is bound, investigate before killing.
+
+---
+
+## Project-Specific Rules
+
+<!-- These rules are unique to THIS project. Violating any of them is a governance failure. -->
+<!-- Every rule must have a rationale. If you can't explain why, the rule doesn't belong here. -->
+<!-- Delete the examples below and replace with real rules. -->
+
+| #   | Rule                                                                | Rationale                                                     |
+|-----|---------------------------------------------------------------------|---------------------------------------------------------------|
+| R1  | <!-- e.g. Never delete wa_auth/ — WhatsApp session state -->        | <!-- e.g. Corruption requires re-auth and causes downtime --> |
+| R2  | <!-- e.g. All database writes go through the ORM, never raw SQL --> | <!-- e.g. Schema enforcement and migration safety -->         |
+| R3  | <!-- e.g. After every build, restart the running process -->        | <!-- e.g. Process serves stale dist/ until restarted -->      |
+
+---
+
+## Known Patterns & Lessons
+
+<!-- Proven solutions to recurring problems. Apply immediately when you hit the trigger. -->
+<!-- The agent and the Learning Engine populate this section over time. -->
+<!-- Delete the examples below and replace with real patterns as they are discovered. -->
+
+| Pattern                     | Trigger                                  | Fix                                                   | Confidence       |
+|-----------------------------|------------------------------------------|-------------------------------------------------------|------------------|
+| <!-- e.g. build-restart --> | <!-- e.g. You just ran npm run build --> | <!-- e.g. pkill + restart command -->                 | <!-- 0.0–1.0 --> |
+| <!-- e.g. port-conflict --> | <!-- e.g. EADDRINUSE on startup -->      | <!-- e.g. lsof -i :PORT, kill conflicting process --> | <!-- 0.0–1.0 --> |
+
+---
+
+## Environment Variables
+
+<!-- Source: .env (DO NOT COMMIT — .gitignore must list it) -->
+<!-- Template: .env.example -->
+<!-- If this project has no env vars, write "None — all configuration is hardcoded or CLI-driven." -->
+
+| Variable          | Required        | Purpose               | Example               |
+|-------------------|-----------------|-----------------------|-----------------------|
+| `PORT`            | Yes             | HTTP server port      | `{{PORT}}`            |
+| <!-- ADD HERE --> | <!-- Yes/No --> | <!-- What it does --> | <!-- Sample value --> |
+
+---
+
+## Execution Contract
+
+Before claiming any task complete, provide:
+
+1. **Exact action taken** — what you did, specifically
+2. **Direct evidence** — file path + line, command + output, diff, or screenshot
+3. **Verification result** — run the verification sequence above, all must exit 0
+4. **Status** — mark COMPLETE only after steps 1-3 are proven
+
+See `.supercache/contracts/execution-contract.md` for the full contract.
 
 ---
 
