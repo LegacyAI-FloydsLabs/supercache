@@ -90,7 +90,7 @@ cmd_init() {
 
     # FLOYD.md — only if it doesn't exist (never overwrite project-specific content)
     if [[ ! -f "$target/FLOYD.md" ]]; then
-        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{VERSION}}/$SC_VERSION/g; s|{{SUPERCACHE_PATH}}|$SC_ROOT|g; s/{{DATE}}/$(date +%Y-%m-%d)/g" \
+        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{VERSION}}/$SC_VERSION/g; s|{{SUPERCACHE_PATH}}|$SC_ROOT|g; s/{{DATE}}/$(date +%Y-%m-%dT%H:%M:%S%z)/g" \
             "$TEMPLATES/floyd-md-template.md" > "$target/FLOYD.md"
         ok "Created FLOYD.md"
     else
@@ -99,7 +99,7 @@ cmd_init() {
 
     # SSOT
     if [[ ! -f "$target/SSOT/README.md" ]]; then
-        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{DATE}}/$(date +%Y-%m-%d)/g" \
+        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{DATE}}/$(date +%Y-%m-%dT%H:%M:%S%z)/g" \
             "$TEMPLATES/ssot-template.md" > "$target/SSOT/README.md"
         ok "Created SSOT/README.md"
     else
@@ -108,7 +108,7 @@ cmd_init() {
 
     # Issues
     if [[ ! -f "$target/Issues/README.md" ]]; then
-        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{DATE}}/$(date +%Y-%m-%d)/g" \
+        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{DATE}}/$(date +%Y-%m-%dT%H:%M:%S%z)/g" \
             "$TEMPLATES/issues-template.md" > "$target/Issues/README.md"
         ok "Created Issues/README.md"
     else
@@ -250,7 +250,7 @@ cmd_archive() {
     local target="${1:-.}"
     target="$(cd "$target" && pwd)"
     local project_name="$(basename "$target")"
-    local archive_date="$(date +%Y-%m-%d)"
+    local archive_date="$(date +%Y-%m-%dT%H:%M:%S%z)"
 
     info "Archiving project: $project_name"
 
