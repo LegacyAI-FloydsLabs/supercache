@@ -1,6 +1,6 @@
 # .supercache/ — Legacy AI Governance System
 
-**Version:** 1.2.0
+**Version:** 1.3.0
 **Owner:** Douglas Talley / Legacy AI
 **Repository:** github.com/LegacyAI-FloydsLabs/supercache
 
@@ -78,17 +78,27 @@ Everything in the section above, plus:
 │   ├── port-allocation-policy.yaml # Forbidden and allocated ports
 │   └── model-routing.yaml        # LLM selection rules
 ├── templates/
-│   ├── floyd-md-template.md      # Project FLOYD.md skeleton (canonical, required)
-│   ├── claude-md-template.md     # Project CLAUDE.md skeleton (Claude adapter, optional)
-│   ├── ssot-template.md          # Project SSOT template
-│   ├── issues-template.md        # Project issues ledger template
-│   └── agent-log-template.md     # Agent log format spec
+│   ├── floyd-md-template.md            # Project FLOYD.md skeleton (canonical, required)
+│   ├── claude-md-template.md           # Project CLAUDE.md skeleton (Claude adapter, optional)
+│   ├── ssot-template.md                # Project SSOT with Verification Sweep Protocol
+│   ├── issues-template.md              # Project issues ledger with lifecycle + change log
+│   ├── repo-migration-plan-template.md # Three-document migration plan template
+│   └── agent-log-template.md           # Agent log format spec
 ├── contracts/
-│   └── execution-contract.md     # Validation gates for all agents
+│   ├── agent-contract.md               # Global agent contract (Before You Start, drive topology, identity rules)
+│   ├── execution-contract.md           # Evidence + verification gates for all agents
+│   ├── repo-structure.md               # Canonical layouts per language + migration workflow
+│   ├── git-discipline.md               # Pre-commit checklist, commit standards, secret hygiene, reputation
+│   ├── document-management.md          # Anti-Cruft Rule, document homes, SSOT sweep, reference tier
+│   └── repo-hygiene.md                 # .gitignore baselines, cleanup triggers, tidiness standards
 ├── hooks/
-│   ├── pre-commit.sh             # Blocks commits to .supercache/
-│   ├── session-end.sh            # Handoff block reminder
-│   └── floyd-state-pause.sh      # Session state capture
+│   ├── pre-commit.sh                     # Blocks commits TO .supercache/ from other projects
+│   ├── supercache-repo-precommit.sh      # Version-drift check for the governance repo itself
+│   ├── session-end.sh                    # Handoff block reminder
+│   ├── floyd-state-pause.sh              # Session state capture
+│   ├── critic-runner.sh                  # Governance compliance sweep across drives
+│   ├── log-rotate.sh                     # Nightly log compression
+│   └── state-monitor.sh                  # Orphaned session state detection
 ├── skills/
 │   └── INDEX.md                  # Skills library catalog
 └── mcp/

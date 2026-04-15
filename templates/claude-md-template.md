@@ -94,6 +94,12 @@ Routine coding, bulk generation, and frontend work default to **Floyd** unless t
 ### Verification before "done"
 Every claimed completion must include: exact action, direct evidence (file/line, command/output, or diff), verification result, completeness matrix. See `.supercache/contracts/execution-contract.md`.
 
+### Other contracts you are bound by
+- `.supercache/contracts/repo-structure.md` — canonical project layouts per language; migration workflow for non-compliant repositories
+- `.supercache/contracts/git-discipline.md` — pre-commit checklist, commit message standards, secret hygiene, External Identity Rule enforcement
+- `.supercache/contracts/document-management.md` — Anti-Cruft Rule (never create docs unless asked), canonical document homes, SSOT verification sweep protocol
+- `.supercache/contracts/repo-hygiene.md` — `.gitignore` baselines, cleanup triggers, project root tidiness
+
 ---
 
 ## Project-Specific Claude Rules

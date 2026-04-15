@@ -26,11 +26,15 @@ You are working on **{{PROJECT_NAME}}**, a Legacy AI project.
 1. Read this file completely. Do not skim. Every section constrains your behavior.
 2. **If you are Claude Code**: also read `CLAUDE.md` if it exists at the project root. It contains your role, division of labor with Floyd, and Claude-specific rules.
 3. Read `.supercache/READONLY` — you MUST NOT write to `.supercache/`.
-4. Read `SSOT/README.md` for current project state.
-5. Read `Issues/README.md` for open issues.
+4. Read `SSOT/{{PROJECT_NAME}}_SSOT.md` for current project state. Perform the Verification Sweep Protocol defined in `.supercache/contracts/document-management.md` for sections relevant to your task.
+5. Read `Issues/{{PROJECT_NAME}}_ISSUES.md` for open issues and blockers.
 6. Read `.supercache/manifests/port-allocation-policy.yaml` — NEVER use port 3000, 5000, 8000, 8080, or any other forbidden port. This project uses port **{{PORT}}**. Do not change it without Douglas Talley's explicit approval.
 7. Read `.supercache/contracts/execution-contract.md` — this governs how you prove your work.
-8. Read `.supercache/manifests/model-routing.yaml` — this tells you which LLM to use for what.
+8. Read `.supercache/contracts/repo-structure.md` — canonical layout for this project's language, plus the migration workflow if structural changes are needed.
+9. Read `.supercache/contracts/git-discipline.md` — pre-commit checklist, commit message standards, secret hygiene, and reputation guardrails.
+10. Read `.supercache/contracts/document-management.md` — Anti-Cruft Rule, canonical document homes, SSOT verification sweep, reference materials tier.
+11. Read `.supercache/contracts/repo-hygiene.md` — `.gitignore` baseline for this language, cleanup triggers, project root tidiness standards.
+12. Read `.supercache/manifests/model-routing.yaml` — this tells you which LLM to use for what.
 
 ### Governance Location
 ```
@@ -43,8 +47,8 @@ It is **READ-ONLY**. Do not create, modify, or delete any file there.
 
 | Location             | Purpose                                          | Example                                         |
 |----------------------|--------------------------------------------------|-------------------------------------------------|
-| `SSOT/`              | Project status, decisions, findings              | `SSOT/README.md`, `SSOT/decision-log.md`        |
-| `Issues/`            | Bugs, blockers, tasks                            | `Issues/README.md`, `Issues/001-description.md` |
+| `SSOT/`              | Project status, decisions, findings, verification | `SSOT/{{PROJECT_NAME}}_SSOT.md`, `SSOT/decision-log.md` |
+| `Issues/`            | Bugs, blockers, tasks, help-desk ledger          | `Issues/{{PROJECT_NAME}}_ISSUES.md`, `Issues/0001-description.md` |
 | `.floyd/`            | Agent working state, session logs, runtime cache | `.floyd/agent_log.jsonl`                        |
 | Project source files | Your actual work                                 | Any file in the project tree not listed below   |
 

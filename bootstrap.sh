@@ -5,15 +5,17 @@
 # READS from .supercache/ (never writes to it). WRITES to the target project dir.
 #
 # Usage:
-#   bootstrap.sh --init [dir]               Initialize governance in a project directory
-#   bootstrap.sh --info [dir]               Show project orientation (SSOT, issues, agents)
-#   bootstrap.sh --verify [dir]             Compliance check — pass/fail per artifact
-#   bootstrap.sh --repair [dir]             Fix missing/outdated artifacts
-#   bootstrap.sh --add-claude [dir]         Add a CLAUDE.md adapter to a project (opt-in)
-#   bootstrap.sh --bump-version X.Y.Z       Bump .supercache/ version in lockstep across all files
-#   bootstrap.sh --archive [dir]            Graceful project shutdown
-#   bootstrap.sh --health                   Scan all drives for compliance
-#   bootstrap.sh --version                  Print .supercache/ version
+#   bootstrap.sh --init [dir]                   Initialize governance in a project directory
+#   bootstrap.sh --info [dir]                   Show project orientation (SSOT, issues, agents)
+#   bootstrap.sh --verify [dir]                 Compliance check — pass/fail per artifact
+#   bootstrap.sh --repair [dir]                 Fix missing/outdated artifacts
+#   bootstrap.sh --add-claude [dir]             Add a CLAUDE.md adapter to a project (opt-in)
+#   bootstrap.sh --bulk-init <parent> [flags]   Bulk retrofit --init + --add-claude across a parent dir
+#                                               Flags: --no-claude (skip CLAUDE.md), --dry-run (preview)
+#   bootstrap.sh --bump-version X.Y.Z           Bump .supercache/ version in lockstep across all files
+#   bootstrap.sh --archive [dir]                Graceful project shutdown
+#   bootstrap.sh --health                       Scan all drives for compliance
+#   bootstrap.sh --version                      Print .supercache/ version
 #
 # Agent model:
 #   FLOYD.md is the canonical project spec. Required for every project.
@@ -94,31 +96,39 @@ cmd_init() {
     # Create project directories
     mkdir -p "$target/SSOT" "$target/Issues" "$target/.floyd"
 
+    # Sanitize project name for use in filenames (replace spaces with underscores)
+    local safe_name
+    safe_name="$(echo "$project_name" | tr ' ' '_')"
+    local now
+    now="$(date +%Y-%m-%dT%H:%M:%S%z)"
+
     # FLOYD.md — only if it doesn't exist (never overwrite project-specific content)
     if [[ ! -f "$target/FLOYD.md" ]]; then
-        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{VERSION}}/$SC_VERSION/g; s|{{SUPERCACHE_PATH}}|$SC_ROOT|g; s/{{DATE}}/$(date +%Y-%m-%dT%H:%M:%S%z)/g" \
+        sed "s/{{PROJECT_NAME}}/$safe_name/g; s/{{VERSION}}/$SC_VERSION/g; s|{{SUPERCACHE_PATH}}|$SC_ROOT|g; s/{{DATE}}/$now/g" \
             "$TEMPLATES/floyd-md-template.md" > "$target/FLOYD.md"
         ok "Created FLOYD.md"
     else
         warn "FLOYD.md already exists — skipping (will not overwrite project-specific content)"
     fi
 
-    # SSOT
-    if [[ ! -f "$target/SSOT/README.md" ]]; then
-        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{DATE}}/$(date +%Y-%m-%dT%H:%M:%S%z)/g" \
-            "$TEMPLATES/ssot-template.md" > "$target/SSOT/README.md"
-        ok "Created SSOT/README.md"
+    # SSOT — uses <PROJECT_NAME>_SSOT.md filename convention (v1.3.0+)
+    local ssot_file="$target/SSOT/${safe_name}_SSOT.md"
+    if [[ ! -f "$ssot_file" ]]; then
+        sed "s/{{PROJECT_NAME}}/$safe_name/g; s/{{VERSION}}/$SC_VERSION/g; s/{{DATE}}/$now/g" \
+            "$TEMPLATES/ssot-template.md" > "$ssot_file"
+        ok "Created SSOT/${safe_name}_SSOT.md"
     else
-        warn "SSOT/README.md already exists — skipping"
+        warn "SSOT/${safe_name}_SSOT.md already exists — skipping"
     fi
 
-    # Issues
-    if [[ ! -f "$target/Issues/README.md" ]]; then
-        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{DATE}}/$(date +%Y-%m-%dT%H:%M:%S%z)/g" \
-            "$TEMPLATES/issues-template.md" > "$target/Issues/README.md"
-        ok "Created Issues/README.md"
+    # Issues — uses <PROJECT_NAME>_ISSUES.md filename convention (v1.3.0+)
+    local issues_file="$target/Issues/${safe_name}_ISSUES.md"
+    if [[ ! -f "$issues_file" ]]; then
+        sed "s/{{PROJECT_NAME}}/$safe_name/g; s/{{VERSION}}/$SC_VERSION/g; s/{{DATE}}/$now/g" \
+            "$TEMPLATES/issues-template.md" > "$issues_file"
+        ok "Created Issues/${safe_name}_ISSUES.md"
     else
-        warn "Issues/README.md already exists — skipping"
+        warn "Issues/${safe_name}_ISSUES.md already exists — skipping"
     fi
 
     # Agent log
@@ -222,9 +232,17 @@ cmd_verify() {
         fi
     }
 
+    # Sanitized name used in per-project filenames (v1.3.0+ convention)
+    local safe_name
+    safe_name="$(echo "$project_name" | tr ' ' '_')"
+
     check "FLOYD.md exists (canonical)" "[[ -f '$target/FLOYD.md' ]]"
     check "SSOT/ directory exists" "[[ -d '$target/SSOT' ]]"
+    check "SSOT/${safe_name}_SSOT.md present (v1.3.0+ naming)" \
+        "[[ -f '$target/SSOT/${safe_name}_SSOT.md' ]] || [[ -f '$target/SSOT/README.md' ]]"
     check "Issues/ directory exists" "[[ -d '$target/Issues' ]]"
+    check "Issues/${safe_name}_ISSUES.md present (v1.3.0+ naming)" \
+        "[[ -f '$target/Issues/${safe_name}_ISSUES.md' ]] || [[ -f '$target/Issues/README.md' ]]"
     check ".floyd/ directory exists" "[[ -d '$target/.floyd' ]]"
     check "Agent log exists" "[[ -f '$target/.floyd/agent_log.jsonl' ]]"
     check "Version stamp exists" "[[ -f '$target/.floyd/.supercache_version' ]]"
@@ -306,6 +324,170 @@ cmd_add_claude() {
     ok "Claude adapter added for '$project_name'"
     info "Edit $target/CLAUDE.md to fill in project-specific role and rules."
     info "Run 'bootstrap.sh --verify $target' to confirm compliance."
+}
+
+cmd_bulk_init() {
+    local parent="${1:-}"
+    local with_claude="${2:-}"
+    local dry_run="${3:-}"
+
+    if [[ -z "$parent" ]]; then
+        fail "Usage: bootstrap.sh --bulk-init <parent-dir> [--no-claude] [--dry-run]"
+        fail "Example: bootstrap.sh --bulk-init /Volumes/Storage/Development"
+        fail ""
+        fail "Walks the parent directory and runs --init on every directory that looks"
+        fail "like a project (has a recognizable manifest file like package.json, Cargo.toml,"
+        fail "pyproject.toml, go.mod, Package.swift, etc.) and lacks FLOYD.md."
+        fail ""
+        fail "By default, also creates CLAUDE.md via --add-claude logic. Pass --no-claude"
+        fail "to skip CLAUDE.md creation."
+        fail ""
+        fail "Use --dry-run to preview the target list without creating any files."
+        exit 1
+    fi
+
+    if [[ ! -d "$parent" ]]; then
+        fail "Parent directory does not exist: $parent"
+        exit 1
+    fi
+
+    parent="$(cd "$parent" && pwd)"
+
+    local add_claude_default="yes"
+    local is_dry_run="no"
+    for arg in "$with_claude" "$dry_run"; do
+        case "$arg" in
+            --no-claude) add_claude_default="no" ;;
+            --dry-run)   is_dry_run="yes" ;;
+        esac
+    done
+
+    info "Bulk-init scanning: $parent"
+    info "Mode: $([ "$is_dry_run" = "yes" ] && echo "DRY RUN (preview only)" || echo "EXECUTE")"
+    info "CLAUDE.md: $([ "$add_claude_default" = "yes" ] && echo "create" || echo "skip")"
+    echo ""
+
+    local -a skipped_existing=()
+    local -a skipped_not_project=()
+    local -a skipped_excluded=()
+    local -a to_init=()
+
+    # Exclusion list — directories that should never get governance
+    local exclude_pattern='^(node_modules|\.git|\.floyd|\.supercache|\.Trashes|\.Spotlight-V100|\.fseventsd|\.DocumentRevisions-V100|\.TemporaryItems|Media\.localized|.*\.photoslibrary|.*\.musiclibrary|backup-storage-.*|canonical_sources|scraped_repos|reference|SSOT|Issues)$'
+
+    for dir in "$parent"/*/; do
+        [[ -d "$dir" ]] || continue
+        local name
+        name="$(basename "$dir")"
+
+        # Skip excluded directories
+        if [[ "$name" =~ $exclude_pattern ]]; then
+            skipped_excluded+=("$name")
+            continue
+        fi
+
+        # Skip if already governed
+        if [[ -f "$dir/FLOYD.md" ]]; then
+            skipped_existing+=("$name")
+            continue
+        fi
+
+        # Project detection: look for a recognizable manifest or a .git directory
+        local is_project="no"
+        for manifest in package.json Cargo.toml pyproject.toml setup.py go.mod Package.swift Gemfile pom.xml build.gradle CMakeLists.txt Makefile requirements.txt mix.exs composer.json; do
+            if [[ -f "$dir/$manifest" ]]; then
+                is_project="yes"
+                break
+            fi
+        done
+        if [[ "$is_project" = "no" ]] && [[ -d "$dir/.git" ]]; then
+            is_project="yes"
+        fi
+
+        if [[ "$is_project" = "no" ]]; then
+            skipped_not_project+=("$name")
+            continue
+        fi
+
+        to_init+=("$dir")
+    done
+
+    # Report
+    echo "=== Bulk init target list ==="
+    echo "Will initialize (${#to_init[@]} projects):"
+    for d in "${to_init[@]}"; do
+        echo "  + $(basename "$d")"
+    done
+    echo ""
+
+    if [[ ${#skipped_existing[@]} -gt 0 ]]; then
+        echo "Already governed (skipped ${#skipped_existing[@]}):"
+        for n in "${skipped_existing[@]}"; do
+            echo "  = $n"
+        done
+        echo ""
+    fi
+
+    if [[ ${#skipped_not_project[@]} -gt 0 ]]; then
+        echo "Not recognized as projects (skipped ${#skipped_not_project[@]}):"
+        for n in "${skipped_not_project[@]}"; do
+            echo "  - $n"
+        done
+        echo ""
+    fi
+
+    if [[ ${#skipped_excluded[@]} -gt 0 ]]; then
+        echo "Excluded by rule (skipped ${#skipped_excluded[@]}):"
+        for n in "${skipped_excluded[@]}"; do
+            echo "  x $n"
+        done
+        echo ""
+    fi
+
+    if [[ "$is_dry_run" = "yes" ]]; then
+        info "DRY RUN complete — no files created. Re-run without --dry-run to apply."
+        return 0
+    fi
+
+    if [[ ${#to_init[@]} -eq 0 ]]; then
+        info "Nothing to do — no projects needed initialization."
+        return 0
+    fi
+
+    # Execute
+    echo "=== Executing bulk init ==="
+    local success_count=0
+    local fail_count=0
+    for d in "${to_init[@]}"; do
+        local n
+        n="$(basename "$d")"
+        echo ""
+        info "Initializing: $n"
+        if cmd_init "$d" > /dev/null 2>&1; then
+            ok "  FLOYD.md + SSOT + Issues + .floyd created"
+            if [[ "$add_claude_default" = "yes" ]]; then
+                if cmd_add_claude "$d" > /dev/null 2>&1; then
+                    ok "  CLAUDE.md created"
+                else
+                    warn "  CLAUDE.md creation failed (continuing)"
+                fi
+            fi
+            success_count=$((success_count + 1))
+        else
+            fail "  init failed for $n (continuing with remaining projects)"
+            fail_count=$((fail_count + 1))
+        fi
+    done
+
+    echo ""
+    echo "=== Bulk init summary ==="
+    ok "Initialized: $success_count projects"
+    if [[ $fail_count -gt 0 ]]; then
+        fail "Failed: $fail_count projects"
+    fi
+    info "Skipped (already governed): ${#skipped_existing[@]}"
+    info "Skipped (not a project): ${#skipped_not_project[@]}"
+    info "Skipped (excluded): ${#skipped_excluded[@]}"
 }
 
 cmd_bump_version() {
@@ -485,6 +667,7 @@ case "${1:-}" in
     --verify)       cmd_verify "${2:-.}" ;;
     --repair)       cmd_repair "${2:-.}" ;;
     --add-claude)   cmd_add_claude "${2:-.}" ;;
+    --bulk-init)    cmd_bulk_init "${2:-}" "${3:-}" "${4:-}" ;;
     --bump-version) cmd_bump_version "${2:-}" "${3:-}" ;;
     --archive)      cmd_archive "${2:-.}" ;;
     --health)       cmd_health ;;
@@ -495,17 +678,19 @@ case "${1:-}" in
         echo "Usage: bootstrap.sh <command> [args]"
         echo ""
         echo "Project commands:"
-        echo "  --init [dir]             Initialize governance in a project directory"
-        echo "  --info [dir]             Show project orientation"
-        echo "  --verify [dir]           Compliance check (pass/fail)"
-        echo "  --repair [dir]           Fix missing/outdated artifacts"
-        echo "  --add-claude [dir]       Add a CLAUDE.md adapter to a project (opt-in)"
-        echo "  --archive [dir]          Mark project for archival"
+        echo "  --init [dir]                  Initialize governance in a project directory"
+        echo "  --info [dir]                  Show project orientation"
+        echo "  --verify [dir]                Compliance check (pass/fail)"
+        echo "  --repair [dir]                Fix missing/outdated artifacts"
+        echo "  --add-claude [dir]            Add a CLAUDE.md adapter to a project (opt-in)"
+        echo "  --bulk-init <parent> [flags]  Retrofit --init + --add-claude across every project under a parent dir"
+        echo "                                Flags: --no-claude, --dry-run"
+        echo "  --archive [dir]               Mark project for archival"
         echo ""
         echo "Governance commands:"
-        echo "  --bump-version X.Y.Z     Bump .supercache/ version in lockstep across all files"
-        echo "  --health                 Scan all drives for compliance"
-        echo "  --version                Print .supercache/ version"
+        echo "  --bump-version X.Y.Z          Bump .supercache/ version in lockstep across all files"
+        echo "  --health                      Scan all drives for compliance"
+        echo "  --version                     Print .supercache/ version"
         echo ""
         echo "Agent model:"
         echo "  FLOYD.md is required (canonical project spec)."

@@ -1,6 +1,6 @@
 # Agent Contract
-**Version:** 1.2.0
-**Governance:** .supercache/ v1.2.0
+**Version:** 1.3.0
+**Governance:** .supercache/ v1.3.0
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs every AI agent operating under Legacy AI governance.
@@ -61,11 +61,15 @@ Complete every step below before making any change to any file. No exceptions.
 2. **If you are Claude Code**: read `CLAUDE.md` at the project root if it exists. If it does not exist, continue under `FLOYD.md` alone.
 3. Read this file completely. You are reading it now. Do not stop.
 4. Read `.supercache/READONLY` — you MUST NOT write to `.supercache/`. Violation corrupts the governance layer for all agents and projects.
-5. Read `SSOT/README.md` in the project directory for current project state.
-6. Read `Issues/README.md` in the project directory for open issues.
+5. Read the project's `SSOT/<PROJECT_NAME>_SSOT.md` for current project state. Perform the **Verification Sweep Protocol** defined in `.supercache/contracts/document-management.md` for any sections relevant to your task.
+6. Read the project's `Issues/<PROJECT_NAME>_ISSUES.md` for open issues and blockers.
 7. Read `.supercache/manifests/port-allocation-policy.yaml` — NEVER bind to port 3000 or any other forbidden port. The project's `FLOYD.md` states which port is claimed. If the project is on a forbidden port, change it now.
 8. Read `.supercache/contracts/execution-contract.md` — this defines how you prove your work. You will be held to it.
-9. Read `.supercache/manifests/model-routing.yaml` — this tells you which LLM to use for which task type.
+9. Read `.supercache/contracts/repo-structure.md` — canonical project layouts per language and the migration workflow for non-compliant repositories.
+10. Read `.supercache/contracts/git-discipline.md` — pre-commit checklist, commit message standards, secret hygiene, and reputation guardrails.
+11. Read `.supercache/contracts/document-management.md` — Anti-Cruft Rule, canonical document homes, SSOT verification sweep protocol, reference materials tier.
+12. Read `.supercache/contracts/repo-hygiene.md` — `.gitignore` baselines per language, cleanup triggers, project root tidiness standards.
+13. Read `.supercache/manifests/model-routing.yaml` — this tells you which LLM to use for which task type.
 
 ---
 
