@@ -53,10 +53,11 @@ storage:
       free: 664GB
     t7:
       mount: /Volumes/T7
-      role: ml_models_datasets
+      role: time_machine_target_mac_mini
       capacity: 931GB
-      free: 101GB
-      warning: "90% full — needs triage"
+      free: 144GB
+      governance_access: off_limits
+      note: "Time Machine target for Mac mini. macOS manages retention (~11 days rolling). Do not touch from agents."
 
   cloud:
     google_drive:

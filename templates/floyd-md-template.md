@@ -18,14 +18,19 @@
 
 You are working on **{{PROJECT_NAME}}**, a Legacy AI project.
 
+**This file (`FLOYD.md`) is the canonical project spec.** It is authoritative for project identity, stack, ports, build commands, environment variables, and project-specific rules. All agents — Floyd, Claude, or any model routed through the OhMyFloyd harness — read this file first.
+
+**Some projects also have a `CLAUDE.md` adapter** alongside this file. That adapter is optional and applies only when Claude is the active agent. It does not duplicate anything here; it layers Claude-specific behavior and role guidance on top. If `CLAUDE.md` conflicts with `FLOYD.md` on project facts, `FLOYD.md` wins. See `.supercache/templates/claude-md-template.md` for the adapter spec.
+
 ### Before You Start
 1. Read this file completely. Do not skim. Every section constrains your behavior.
-2. Read `.supercache/READONLY` — you MUST NOT write to `.supercache/`.
-3. Read `SSOT/README.md` for current project state.
-4. Read `Issues/README.md` for open issues.
-5. Read `.supercache/manifests/port-allocation-policy.yaml` — NEVER use port 3000, 5000, 8000, 8080, or any other forbidden port. This project uses port **{{PORT}}**. Do not change it without Douglas Talley's explicit approval.
-6. Read `.supercache/contracts/execution-contract.md` — this governs how you prove your work.
-7. Read `.supercache/manifests/model-routing.yaml` — this tells you which LLM to use for what.
+2. **If you are Claude Code**: also read `CLAUDE.md` if it exists at the project root. It contains your role, division of labor with Floyd, and Claude-specific rules.
+3. Read `.supercache/READONLY` — you MUST NOT write to `.supercache/`.
+4. Read `SSOT/README.md` for current project state.
+5. Read `Issues/README.md` for open issues.
+6. Read `.supercache/manifests/port-allocation-policy.yaml` — NEVER use port 3000, 5000, 8000, 8080, or any other forbidden port. This project uses port **{{PORT}}**. Do not change it without Douglas Talley's explicit approval.
+7. Read `.supercache/contracts/execution-contract.md` — this governs how you prove your work.
+8. Read `.supercache/manifests/model-routing.yaml` — this tells you which LLM to use for what.
 
 ### Governance Location
 ```

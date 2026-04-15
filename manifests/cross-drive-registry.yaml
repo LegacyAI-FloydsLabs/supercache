@@ -29,27 +29,33 @@ drives:
 
   t7:
     mount: /Volumes/T7
-    role: ml_models_and_datasets
-    governance: true
-    supercache: symlink → /Volumes/SanDisk1Tb/.supercache
-    warning: "90% capacity — triage pending"
+    role: time_machine_target_mac_mini
+    governance_access: off_limits
+    reason: "Time Machine target for Mac mini backups. macOS Time Machine manages the drive automatically. Agent activity risks interfering with backup integrity."
     contents:
-      - ML model files
-      - training datasets
-      - Time Machine backups (to investigate)
+      - Time Machine backups (rolling ~11 days, auto-thinned by macOS)
+    rules:
+      - no_reads
+      - no_writes
+      - no_scans
+      - no_references
+    confirmed_via: Finder inspection 2026-04-15 (13 backup directories + backup_manifest.plist, zero ML/dataset content)
 
   google_drive:
-    mount: "Not yet mounted (install Google Drive for Desktop)"
+    mount: "~/Library/CloudStorage/GoogleDrive-douglastalley1977@gmail.com/My Drive"
     role: tier_3_cloud_backbone
-    future_canonical: true
-    planned_structure:
-      - Floyd_Ecosystem/supercache/ (future canonical .supercache/)
+    active: true
+    sync_targets:
+      - /Volumes/Storage
+      - /Volumes/SanDisk1Tb
+    structure:
+      - Floyd_Ecosystem/supercache.retired-20260415/ (pre-migration archive — DO NOT EDIT)
       - Floyd_Ecosystem/archives/
       - Floyd_Ecosystem/data_lake/
       - Floyd_Ecosystem/assets/
-      - Floyd_Ecosystem/t7_offload/
       - Floyd_Ecosystem/state_backups/
       - Floyd_Ecosystem/log_archives/
+      - "Other computers/My Mac/ (Google Drive for Desktop backup feature — cloud-only, not mirrored locally)"
 
 github:
   org: LegacyAI-FloydsLabs

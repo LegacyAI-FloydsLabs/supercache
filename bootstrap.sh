@@ -5,13 +5,19 @@
 # READS from .supercache/ (never writes to it). WRITES to the target project dir.
 #
 # Usage:
-#   bootstrap.sh --init [dir]      Initialize governance in a project directory
-#   bootstrap.sh --info [dir]      Show project orientation (SSOT, issues, agents)
-#   bootstrap.sh --verify [dir]    Compliance check — pass/fail per artifact
-#   bootstrap.sh --repair [dir]    Fix missing/outdated artifacts
-#   bootstrap.sh --archive [dir]   Graceful project shutdown
-#   bootstrap.sh --health          Scan all drives for compliance
-#   bootstrap.sh --version         Print .supercache/ version
+#   bootstrap.sh --init [dir]               Initialize governance in a project directory
+#   bootstrap.sh --info [dir]               Show project orientation (SSOT, issues, agents)
+#   bootstrap.sh --verify [dir]             Compliance check — pass/fail per artifact
+#   bootstrap.sh --repair [dir]             Fix missing/outdated artifacts
+#   bootstrap.sh --add-claude [dir]         Add a CLAUDE.md adapter to a project (opt-in)
+#   bootstrap.sh --bump-version X.Y.Z       Bump .supercache/ version in lockstep across all files
+#   bootstrap.sh --archive [dir]            Graceful project shutdown
+#   bootstrap.sh --health                   Scan all drives for compliance
+#   bootstrap.sh --version                  Print .supercache/ version
+#
+# Agent model:
+#   FLOYD.md is the canonical project spec. Required for every project.
+#   CLAUDE.md is the Claude-specific adapter. Optional. Opt-in via --add-claude.
 #
 # Environment:
 #   SUPERCACHE_ROOT   Override .supercache/ location (default: auto-detect)
@@ -32,8 +38,8 @@ find_supercache() {
         fi
         dir="$(dirname "$dir")"
     done
-    # Check common mount points
-    for mount in /Volumes/SanDisk1Tb /Volumes/Storage /Volumes/T7; do
+    # Check common mount points (T7 is OFF LIMITS — Time Machine target, never scan)
+    for mount in /Volumes/SanDisk1Tb /Volumes/Storage; do
         if [[ -f "$mount/.supercache/VERSION" ]]; then
             echo "$mount/.supercache"
             return
@@ -141,11 +147,18 @@ cmd_info() {
     echo ".supercache/ version: $SC_VERSION"
     echo ""
 
-    # FLOYD.md
+    # FLOYD.md (canonical, required)
     if [[ -f "$target/FLOYD.md" ]]; then
-        ok "FLOYD.md present ($(wc -l < "$target/FLOYD.md") lines)"
+        ok "FLOYD.md present ($(wc -l < "$target/FLOYD.md") lines) [canonical]"
     else
         fail "FLOYD.md missing"
+    fi
+
+    # CLAUDE.md (adapter, optional)
+    if [[ -f "$target/CLAUDE.md" ]]; then
+        ok "CLAUDE.md present ($(wc -l < "$target/CLAUDE.md") lines) [Claude adapter]"
+    else
+        info "CLAUDE.md not present (optional — run --add-claude to add)"
     fi
 
     # SSOT
@@ -209,7 +222,7 @@ cmd_verify() {
         fi
     }
 
-    check "FLOYD.md exists" "[[ -f '$target/FLOYD.md' ]]"
+    check "FLOYD.md exists (canonical)" "[[ -f '$target/FLOYD.md' ]]"
     check "SSOT/ directory exists" "[[ -d '$target/SSOT' ]]"
     check "Issues/ directory exists" "[[ -d '$target/Issues' ]]"
     check ".floyd/ directory exists" "[[ -d '$target/.floyd' ]]"
@@ -220,6 +233,21 @@ cmd_verify() {
         local proj_ver
         proj_ver="$(cat "$target/.floyd/.supercache_version")"
         check "Version current ($proj_ver == $SC_VERSION)" "[[ '$proj_ver' == '$SC_VERSION' ]]"
+    fi
+
+    # CLAUDE.md is optional. If present, verify it has the expected adapter structure.
+    if [[ -f "$target/CLAUDE.md" ]]; then
+        info "CLAUDE.md present — verifying adapter structure"
+        check "CLAUDE.md references FLOYD.md as canonical" \
+            "grep -q 'Canonical spec' '$target/CLAUDE.md' || grep -q 'FLOYD.md' '$target/CLAUDE.md'"
+        check "CLAUDE.md has 'Agent Role on This Project' section" \
+            "grep -q '## Agent Role on This Project' '$target/CLAUDE.md'"
+        check "CLAUDE.md has 'Division of Labor' section" \
+            "grep -q '## Division of Labor' '$target/CLAUDE.md'"
+        check "CLAUDE.md references execution contract" \
+            "grep -q 'execution-contract' '$target/CLAUDE.md'"
+    else
+        info "CLAUDE.md not present (optional — skipping adapter checks)"
     fi
 
     echo ""
@@ -244,6 +272,127 @@ cmd_repair() {
     # Update version stamp
     echo "$SC_VERSION" > "$target/.floyd/.supercache_version"
     ok "Version stamp updated to $SC_VERSION"
+}
+
+cmd_add_claude() {
+    local target="${1:-.}"
+    target="$(cd "$target" && pwd)"
+    local project_name="$(basename "$target")"
+
+    info "Adding Claude adapter to: $target"
+    info "Using .supercache/ v${SC_VERSION} at: $SC_ROOT"
+
+    # Project must already be governed
+    if [[ ! -f "$target/FLOYD.md" ]]; then
+        fail "FLOYD.md missing — run --init first. CLAUDE.md is an adapter, not a replacement."
+        exit 1
+    fi
+
+    if [[ ! -f "$TEMPLATES/claude-md-template.md" ]]; then
+        fail "Template missing: $TEMPLATES/claude-md-template.md"
+        exit 1
+    fi
+
+    # CLAUDE.md — only if it doesn't exist
+    if [[ ! -f "$target/CLAUDE.md" ]]; then
+        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{VERSION}}/$SC_VERSION/g; s|{{SUPERCACHE_PATH}}|$SC_ROOT|g; s/{{DATE}}/$(date +%Y-%m-%dT%H:%M:%S%z)/g" \
+            "$TEMPLATES/claude-md-template.md" > "$target/CLAUDE.md"
+        ok "Created CLAUDE.md"
+    else
+        warn "CLAUDE.md already exists — skipping (will not overwrite project-specific content)"
+    fi
+
+    echo ""
+    ok "Claude adapter added for '$project_name'"
+    info "Edit $target/CLAUDE.md to fill in project-specific role and rules."
+    info "Run 'bootstrap.sh --verify $target' to confirm compliance."
+}
+
+cmd_bump_version() {
+    local new_ver="${1:-}"
+    local dry_run="${2:-}"
+
+    if [[ -z "$new_ver" ]]; then
+        fail "Usage: bootstrap.sh --bump-version X.Y.Z [--dry-run]"
+        fail "Example: bootstrap.sh --bump-version 1.3.0"
+        exit 1
+    fi
+
+    if ! [[ "$new_ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        fail "Invalid version format: '$new_ver'"
+        fail "Expected semver: X.Y.Z (e.g., 1.3.0)"
+        exit 1
+    fi
+
+    if [[ ! -f "$SC_ROOT/VERSION" ]] || [[ ! -d "$SC_ROOT/.git" ]]; then
+        fail "Not inside a .supercache/ git repo. SC_ROOT=$SC_ROOT"
+        exit 1
+    fi
+
+    local old_ver
+    old_ver="$(cat "$SC_ROOT/VERSION")"
+
+    info "Bumping .supercache/ version: $old_ver → $new_ver"
+
+    if [[ "$dry_run" != "--dry-run" ]]; then
+        # Require clean working tree — prevent mixing version bumps with unrelated edits
+        if ! git -C "$SC_ROOT" diff --quiet || ! git -C "$SC_ROOT" diff --cached --quiet; then
+            fail "Working tree has uncommitted changes. Commit or stash before bumping version."
+            fail "Run 'git -C $SC_ROOT status' to see what's pending."
+            exit 1
+        fi
+    else
+        info "DRY RUN — no files will be modified"
+    fi
+
+    # Files that must all carry the version string in lockstep
+    local files=(
+        "$SC_ROOT/VERSION"
+        "$SC_ROOT/README.md"
+        "$SC_ROOT/contracts/agent-contract.md"
+        "$SC_ROOT/contracts/execution-contract.md"
+    )
+
+    for f in "${files[@]}"; do
+        if [[ ! -f "$f" ]]; then
+            fail "Expected file missing: $f"
+            exit 1
+        fi
+    done
+
+    # VERSION file
+    if [[ "$dry_run" != "--dry-run" ]]; then
+        echo "$new_ver" > "$SC_ROOT/VERSION"
+    fi
+    ok "VERSION: $old_ver → $new_ver"
+
+    # README.md
+    if [[ "$dry_run" != "--dry-run" ]]; then
+        sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$SC_ROOT/README.md"
+    fi
+    ok "README.md: **Version:** $new_ver"
+
+    # agent-contract.md (Version line AND Governance line)
+    if [[ "$dry_run" != "--dry-run" ]]; then
+        sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$SC_ROOT/contracts/agent-contract.md"
+        sed -i '' "s|\*\*Governance:\*\* \.supercache/ v$old_ver|\*\*Governance:\*\* .supercache/ v$new_ver|" "$SC_ROOT/contracts/agent-contract.md"
+    fi
+    ok "contracts/agent-contract.md: Version + Governance → $new_ver"
+
+    # execution-contract.md
+    if [[ "$dry_run" != "--dry-run" ]]; then
+        sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$SC_ROOT/contracts/execution-contract.md"
+    fi
+    ok "contracts/execution-contract.md: **Version:** $new_ver"
+
+    echo ""
+    if [[ "$dry_run" == "--dry-run" ]]; then
+        info "Dry run complete. No files modified. Re-run without --dry-run to apply."
+    else
+        ok "Version bumped in lockstep across 4 files: $old_ver → $new_ver"
+        info "Review the diff:  git -C $SC_ROOT diff"
+        info "Commit manually with a message like:  'chore: bump version to $new_ver'"
+    fi
 }
 
 cmd_archive() {
@@ -277,7 +426,8 @@ cmd_health() {
     local compliant=0
     local non_compliant=0
 
-    for mount in /Volumes/SanDisk1Tb /Volumes/Storage /Volumes/T7; do
+    # T7 is OFF LIMITS — Time Machine target for Mac mini backups. Never scan it.
+    for mount in /Volumes/SanDisk1Tb /Volumes/Storage; do
         if [[ ! -d "$mount" ]]; then
             warn "Drive not mounted: $mount"
             continue
@@ -330,26 +480,36 @@ cmd_health() {
 
 # --- Main ---
 case "${1:-}" in
-    --init)    cmd_init "${2:-.}" ;;
-    --info)    cmd_info "${2:-.}" ;;
-    --verify)  cmd_verify "${2:-.}" ;;
-    --repair)  cmd_repair "${2:-.}" ;;
-    --archive) cmd_archive "${2:-.}" ;;
-    --health)  cmd_health ;;
-    --version) cmd_version ;;
+    --init)         cmd_init "${2:-.}" ;;
+    --info)         cmd_info "${2:-.}" ;;
+    --verify)       cmd_verify "${2:-.}" ;;
+    --repair)       cmd_repair "${2:-.}" ;;
+    --add-claude)   cmd_add_claude "${2:-.}" ;;
+    --bump-version) cmd_bump_version "${2:-}" "${3:-}" ;;
+    --archive)      cmd_archive "${2:-.}" ;;
+    --health)       cmd_health ;;
+    --version)      cmd_version ;;
     *)
         echo "Legacy AI bootstrap.sh v${SC_VERSION:-unknown}"
         echo ""
-        echo "Usage: bootstrap.sh <command> [directory]"
+        echo "Usage: bootstrap.sh <command> [args]"
         echo ""
-        echo "Commands:"
-        echo "  --init [dir]     Initialize governance in a project directory"
-        echo "  --info [dir]     Show project orientation"
-        echo "  --verify [dir]   Compliance check (pass/fail)"
-        echo "  --repair [dir]   Fix missing/outdated artifacts"
-        echo "  --archive [dir]  Mark project for archival"
-        echo "  --health         Scan all drives for compliance"
-        echo "  --version        Print version"
+        echo "Project commands:"
+        echo "  --init [dir]             Initialize governance in a project directory"
+        echo "  --info [dir]             Show project orientation"
+        echo "  --verify [dir]           Compliance check (pass/fail)"
+        echo "  --repair [dir]           Fix missing/outdated artifacts"
+        echo "  --add-claude [dir]       Add a CLAUDE.md adapter to a project (opt-in)"
+        echo "  --archive [dir]          Mark project for archival"
+        echo ""
+        echo "Governance commands:"
+        echo "  --bump-version X.Y.Z     Bump .supercache/ version in lockstep across all files"
+        echo "  --health                 Scan all drives for compliance"
+        echo "  --version                Print .supercache/ version"
+        echo ""
+        echo "Agent model:"
+        echo "  FLOYD.md is required (canonical project spec)."
+        echo "  CLAUDE.md is optional (Claude-specific adapter). Add with --add-claude."
         exit 1
         ;;
 esac
