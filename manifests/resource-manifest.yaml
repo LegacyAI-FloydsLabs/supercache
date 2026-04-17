@@ -1,6 +1,6 @@
 # Legacy AI — Resource Manifest
 # All verified infrastructure services, endpoints, and access methods.
-# Last verified: 2026-04-07 (receipt-verified audit)
+# Last verified: 2026-04-17 (DO API audit + cancellation updates)
 # This file is READ-ONLY for agents.
 
 compute:
@@ -18,11 +18,57 @@ compute:
 
   cloud:
     digitalocean:
-      droplet: ubuntu-s-2vcpu-2gb-nyc3-01
-      role: always_on_spine
-      plan: "$6/mo (resized)"
-      tailscale_ip: 100.108.138.101
-      ipv4: 167.99.62.204
+      account_email: DouglasTalley1977@gmail.com
+      account_name: CaptainPhantasy
+      account_uuid: bbf64666-6c31-49a9-ad10-fca3ce4bd916
+      api_token_scope: read+write (billing scope returns 403 — needs separate billing token)
+      droplets:
+        - name: ubuntu-s-2vcpu-2gb-nyc3-01
+          id: 539792529
+          role: always_on_spine
+          plan: s-2vcpu-2gb
+          cost: "$18/mo"
+          specs: "2 vCPU, 2GB RAM, 60GB disk, 3TB transfer"
+          region: nyc3
+          os: Ubuntu 24.04 LTS
+          ipv4: 167.99.62.204
+          private_ip: 10.108.0.2
+          tailscale_ip: 100.108.138.101
+          dns: floyd.legacyai.space
+          running: [tailscale, certbot]
+          stopped: [deer-flow]
+          ssl: "floyd.legacyai.space (Let's Encrypt, expires 2026-07-16, auto-renew)"
+          resize_target: s-1vcpu-1gb ($6/mo, save $12/mo)
+          created: 2025-12-26
+        - name: qdrant-vector-db
+          id: 544067548
+          role: vector_database
+          plan: s-2vcpu-4gb
+          cost: "$24/mo"
+          specs: "2 vCPU, 4GB RAM, 80GB disk, 4TB transfer"
+          region: nyc1
+          os: Docker on Ubuntu 22.04
+          ipv4: 159.65.221.69
+          private_ip: 10.116.0.2
+          dns: none (no public DNS record)
+          project: RagBot3000
+          action: DECIDE — destroy if not needed ($24/mo saved) or keep
+          created: 2026-01-13
+      domains:
+        - name: legacyai.space
+          records: [floyd.legacyai.space → 167.99.62.204]
+      ssh_keys:
+        - name: phallus-key
+          type: ed25519
+      total_monthly: "$42/mo ($18 + $24)"
+      other_resources:
+        floating_ips: 0
+        volumes: 0
+        snapshots: 0
+        firewalls: 0
+        managed_databases: 0
+        kubernetes_clusters: 0
+        apps: 0
     railway:
       plan: pro
       cost: "$20/mo"
@@ -85,10 +131,11 @@ ai_services:
     datastore_id: legacy-ai-curated-knowledge
     datastore_name: "projects/883551004716/locations/global/collections/default_collection/dataStores/legacy-ai-curated-knowledge"
     display_name: "Legacy AI Curated Knowledge"
-    status: provisioned
+    status: provisioned (credit expired)
     provisioned_date: "2026-04-07"
-    credit_source: "Gen App Builder ($1,000 SKU-locked, expires 2026-04-12)"
-    post_credit_cost: "~$0.002/query"
+    credit_source: "Gen App Builder ($1,000 SKU-locked, EXPIRED 2026-04-12)"
+    cost: "~$0.002/query (pay-per-use, no credit remaining)"
+    risk: "Unused queries will incur charges. Disable if not actively used."
   dialogflow_cx:
     project: legacyai-marketplace
     location: us-central1
@@ -98,29 +145,33 @@ ai_services:
     intents:
       - "Default Welcome Intent"
       - "Service Inquiry"
-    status: provisioned
+    status: provisioned (credit expired)
     provisioned_date: "2026-04-07"
-    credit_source: "Dialogflow CX ($600 SKU-locked, expires 2026-04-12)"
-    post_credit_cost: "basic intents free, knowledge queries pennies"
+    credit_source: "Dialogflow CX ($600 SKU-locked, EXPIRED 2026-04-12)"
+    cost: "basic intents free, knowledge queries pennies (pay-per-use, no credit remaining)"
+    risk: "Knowledge queries will incur charges. Disable if not actively used."
 
 databases:
   supabase:
-    plan: pro
-    cost: "$65/mo (base $25 + 4 DBs x $10)"
+    plan: cancelled (was Pro)
+    cancelled_date: "2026-04-17"
+    cancelled_by: Douglas Talley
+    cost: "$0 (cancelled)"
     org: LegacyAI
+    note: "Pro tier cancelled 2026-04-17. Databases may still exist on free tier or be deleted. Export status of Legacy-Field-Command (7,600 rows) unknown."
     databases:
       - name: Legacy-Field-Command
         region: us-east-2
-        status: active
+        status: unknown (check free tier)
       - name: CRM-AI-Pro
         region: us-east-2
-        status: active
+        status: unknown
       - name: Legacy AI Agent Studio
         region: us-east-1
-        status: active
+        status: unknown
       - name: KindHome
         region: us-east-2
-        status: active
+        status: unknown
   pinecone:
     plan: free
     indexes: 4
