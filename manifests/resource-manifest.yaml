@@ -1,6 +1,6 @@
 # Legacy AI — Resource Manifest
 # All verified infrastructure services, endpoints, and access methods.
-# Last verified: 2026-04-07 (receipt-verified audit)
+# Last verified: 2026-04-17 (Floyd Portal deployment audit)
 # This file is READ-ONLY for agents.
 
 compute:
@@ -20,18 +20,50 @@ compute:
     digitalocean:
       droplet: ubuntu-s-2vcpu-2gb-nyc3-01
       role: always_on_spine
-      plan: "$6/mo (resized)"
+      plan: "$42/mo current → $6/mo target (resize pending)"
       tailscale_ip: 100.108.138.101
       ipv4: 167.99.62.204
+      ssl:
+        - domain: floyd.legacyai.space
+          provider: "Let's Encrypt (certbot)"
+          expires: 2026-07-16
+          auto_renew: true
+        - domain: floyd.floydslabs.com
+          provider: "Let's Encrypt (certbot)"
+          expires: 2026-07-16
+          auto_renew: true
+      running_services:
+        - tailscale (always-on relay)
+        - certbot (auto-renew)
+      stopped_services:
+        - deer-flow (stopped 2026-04-17, safe to remove)
+      note: "Deer-flow stopped. Only Tailscale + certbot running. Resize from $42 to $6/mo when ready."
     railway:
       plan: pro
       cost: "$20/mo"
       projects: 7
       headroom: "23GB RAM, 23 vCPU unused"
+      floyd_portal_db:
+        engine: postgres
+        version: "18.3"
+        project_id: e0a8631c-3c16-4465-95ab-1a00c31edacc
+        public_endpoint: "nozomi.proxy.rlwy.net:48658"
+        private_endpoint: "postgres.railway.internal:5432"
+        tenants: 4
+        users: 13
+        conversations: 80
+        console: "https://railway.com/project/e0a8631c-3c16-4465-95ab-1a00c31edacc"
     vercel:
       plan: pro
       cost: "$20/mo"
       projects: 10
+      region: iad1
+      floyd_portal:
+        url: "https://portal.legacyai.space"
+        alt_url: "https://floyd-portal-h8kzuxnti-legacy-floydslabs.vercel.app"
+        vercel_id: prj_eRezF0TpAzA7fscKmiPhoiv4R8ix
+        console: "https://vercel.com/legacy-floydslabs/floyd-portal"
+        source: "https://github.com/LegacyAI-FloydsLabs/floyd-portal"
     gcp_free_tier:
       cloud_run: "2M requests/mo"
       firestore: "1GB, 50K reads/day"
@@ -104,6 +136,24 @@ ai_services:
     post_credit_cost: "basic intents free, knowledge queries pennies"
 
 databases:
+  railway_postgres:
+    engine: postgres
+    version: "18.3"
+    host: "Floyd Portal production database"
+    plan: included_in_railway_pro
+    project_id: e0a8631c-3c16-4465-95ab-1a00c31edacc
+    public_endpoint: "nozomi.proxy.rlwy.net:48658"
+    private_endpoint: "postgres.railway.internal:5432"
+    schema_tables: 8
+    rls_tables: 7
+    tenants: 4
+    users: 13
+    conversations: 80
+    orm: drizzle
+    driver: postgres-js
+    migrations: "drizzle-kit generate + migrate"
+    console: "https://railway.com/project/e0a8631c-3c16-4465-95ab-1a00c31edacc"
+
   supabase:
     plan: pro
     cost: "$65/mo (base $25 + 4 DBs x $10)"
@@ -155,6 +205,32 @@ domains:
     workspace: active
     cost: "$7.20/mo"
     role: primary_business_domain
+
+  dns_authority:
+    domain: legacyai.space
+    authority: hostinger
+    nameservers:
+      - ns1.dns-parking.com
+      - ns2.dns-parking.com
+    note: "Hostinger is the authoritative DNS. IONOS zones exist but are NON-FUNCTIONAL shadows."
+    api:
+      billing: "https://developers.hostinger.com/api/billing/v1/subscriptions"
+      dns: "https://developers.hostinger.com/api/dns/v1/zones/{domain}"
+
+  portal:
+    domain: portal.legacyai.space
+    type: CNAME
+    target: "8cffdc0f0e03caf9.vercel-dns-016.com."
+    ssl: auto (Vercel)
+    status: live
+    deployed: 2026-04-16
+
+  floyd:
+    domain: floyd.legacyai.space
+    type: A
+    target: 167.99.62.204
+    ssl: "Let's Encrypt (expires 2026-07-16)"
+    status: live
 
 
 # =============================================================================

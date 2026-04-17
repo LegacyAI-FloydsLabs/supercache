@@ -1,6 +1,7 @@
 # Legacy AI — Service Catalog
 # All active subscriptions with verified costs.
-# Receipt-verified 2026-04-07. READ-ONLY for agents.
+# Receipt-verified 2026-04-07. Updated 2026-04-17 with Floyd Portal deployment.
+# This file is READ-ONLY for agents.
 
 monthly_total: "$259.38 (post-consolidation target)"
 current_total: "$493.36 (pre-consolidation)"
@@ -27,14 +28,17 @@ active:
   - service: Railway
     plan: Pro
     cost: "$20.00/mo"
-    purpose: 7 hosted projects
+    purpose: 7 hosted projects + Floyd Portal Postgres 18.3 (production)
     status: keep
+    production_service: Floyd Portal DB — 4 tenants, 13 users, 80 conversations
+    project_id: e0a8631c-3c16-4465-95ab-1a00c31edacc
 
   - service: Vercel
     plan: Pro
     cost: "$20.00/mo"
-    purpose: 10 hosted projects + CDN
+    purpose: 10 hosted projects + CDN + portal.legacyai.space
     status: keep
+    production_service: Floyd Portal — portal.legacyai.space (iad1)
 
   - service: Google AI Pro
     plan: AI Pro (via Apple)
@@ -71,10 +75,13 @@ active:
     status: keep
 
   - service: DigitalOcean
-    plan: "1 droplet (resized)"
-    cost: "$6.00/mo (target)"
-    purpose: always-on spine + Tailscale relay
-    status: resize from $42
+    plan: "1 droplet (resize pending)"
+    cost: "$42.00/mo current → $6.00/mo target"
+    purpose: always-on spine + Tailscale relay + certbot
+    status: RESIZE — deer-flow stopped, only Tailscale + certbot running
+    ipv4: 167.99.62.204
+    tailscale_ip: 100.108.138.101
+    ssl: "floyd.legacyai.space (Let's Encrypt, expires 2026-07-16, auto-renew)"
 
   - service: IFTTT
     plan: Pro
@@ -91,16 +98,16 @@ gcp_provisioned:
   - service: Vertex AI Search (Discovery Engine)
     project: legacyai-marketplace
     cost: "~$0.002/query after credit expiry"
-    credit: "$1,000 Gen App Builder (expires 2026-04-12)"
+    credit: "$1,000 Gen App Builder (EXPIRED 2026-04-12)"
     purpose: curated knowledge retrieval for agents
-    status: provisioned 2026-04-07
+    status: provisioned 2026-04-07, credit expired, pay-per-query
 
   - service: Dialogflow CX
     project: legacyai-marketplace
     cost: "basic intents free, knowledge queries pennies"
-    credit: "$600 Dialogflow CX (expires 2026-04-12)"
+    credit: "$600 Dialogflow CX (EXPIRED 2026-04-12)"
     purpose: customer-facing chatbot
-    status: provisioned 2026-04-07
+    status: provisioned 2026-04-07, credit expired, pay-per-use
 
 annual_prepaid:
   - service: ZAI
@@ -110,6 +117,28 @@ annual_prepaid:
   - service: MiniMax
     cost: "$200/yr ($16.67/mo equiv)"
     purpose: heavy coding workhorse
+
+production_services:
+  - service: Floyd Portal
+    url: "https://portal.legacyai.space"
+    alt_url: "https://floyd-portal-h8kzuxnti-legacy-floydslabs.vercel.app"
+    stack: "Next.js 16.2.4, React 19, Drizzle ORM, NextAuth v5, Serwist PWA"
+    hosting: Vercel (iad1)
+    database: Railway Postgres 18.3
+    source: "https://github.com/LegacyAI-FloydsLabs/floyd-portal"
+    tenants:
+      - name: "Precision Sewer Inspection (PSI)"
+        owner: "ryan@precisionsewer.com"
+      - name: "Restore and Renew"
+        owner: "ryan@restoreandrenew.com"
+      - name: "Floyd's Labs"
+        owner: "douglas@floydslabs.com"
+      - name: "Cloud Generalist"
+        owner: "matt@cloudgeneralist.com"
+    users: 13 total
+    conversations: 80 seeded
+    auth: "Credentials (email+password), JWT sessions, 5 roles"
+    deployed: 2026-04-16
 
 pending_cancellation:
   - service: Zapier
@@ -123,9 +152,11 @@ pending_cancellation:
     action: export Legacy-Field-Command data (7,600 rows), then cancel
 
   - service: Hostinger
-    cost: "$13.99/mo"
-    reason: Vercel Pro absorbs hosting
-    action: deploy legacyai.space on Vercel first
+    cost: "$13.99/mo (hosting only)"
+    reason: Vercel Pro absorbs hosting. DNS authority stays on Hostinger.
+    dns_authority: "Hostinger (ns1.dns-parking.com) — NOT IONOS (shadow zones only)"
+    api_token_scope: "DNS + Billing (developers.hostinger.com)"
+    action: cancel Business Web Hosting plan, keep domain registrations
 
   - service: Docker Desktop
     cost: "$11.00/mo"
