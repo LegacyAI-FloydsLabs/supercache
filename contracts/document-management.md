@@ -1,6 +1,6 @@
 # Document Management Contract
-**Version:** 1.3.0
-**Governance:** .supercache/ v1.3.0
+**Version:** 1.4.0
+**Governance:** .supercache/ v1.4.0
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs what documents agents create, where those documents live, how they are named, and how they are maintained over time. It is the authority for document lifecycle and anti-cruft enforcement.
@@ -45,6 +45,8 @@ Every document type has a canonical location. If an agent is creating a document
 | Agent scratch | `.floyd/scratch/*` | Intermediate agent work | Ephemeral; cleanup encouraged |
 | Migration records | `SSOT/migration-plans/<DATE>-<DESCRIPTION>/` | Multi-document migration plans (per `contracts/repo-structure.md`) | Persistent for the duration of the migration; archived after completion |
 | User-facing session records | `~/Documents/` on the user's machine | Records of significant sessions/migrations for the user's reference | User owned; agents write with explicit request only |
+| Shared agent reports | `/Volumes/Storage/Floyd Docs/Reports/<YYYY-MM-DDTHH-MM>_<topic-slug>/report.md` | Long-form reports written for Douglas; cloud-backed via Google Drive | Append-only; directories immutable after write. See Shared Agent Deposits Tier below. |
+| Shared agent research | `/Volumes/Storage/Floyd Docs/Research/<YYYY-MM-DDTHH-MM>_<topic-slug>/research.md` | Research outputs written for Douglas; cloud-backed via Google Drive | Append-only; directories immutable after write. See Shared Agent Deposits Tier below. |
 | API reference (generated) | `docs/api/` | Auto-generated API docs | Regenerated, never hand-edited |
 | Change log (release notes) | `CHANGELOG.md` at repo root | User-facing release history | Append-only at the top (newest first) |
 | License | `LICENSE` at repo root | Legal | Rarely changes |
@@ -216,6 +218,49 @@ Legacy AI maintains a **read-only reference library** at `/Volumes/SanDisk1Tb/re
 
 ---
 
+## Shared Agent Deposits Tier
+
+Legacy AI maintains a **shared, cloud-backed deposit location** at `/Volumes/Storage/Floyd Docs/` for long-form agent-written output (reports, research) that is primarily for Douglas to consult. It is Google Drive–backed, so content is available across devices and survives local drive changes.
+
+### Structure
+
+```
+/Volumes/Storage/Floyd Docs/
+├── FLOYD.md                                # Scoped governance for this folder (on-request)
+├── Reports/
+│   └── <YYYY-MM-DDTHH-MM>_<topic-slug>/
+│       ├── report.md                       # Primary artifact
+│       └── *                               # Supporting files (optional)
+└── Research/
+    └── <YYYY-MM-DDTHH-MM>_<topic-slug>/
+        ├── research.md                     # Primary artifact
+        └── *                               # Supporting files (optional)
+```
+
+### Rules
+
+1. **Append-only (MUST):** Once a `<YYYY-MM-DDTHH-MM>_<topic-slug>/` directory exists, agents MUST NOT silently rewrite its contents. Reports and research are historical records. If a later artifact supersedes an earlier one, create a new dated directory and link forward from the old one.
+2. **Naming (MUST):** New artifact directories MUST use ISO 8601 timestamp + slug: `<YYYY-MM-DDTHH-MM>_<topic-slug>/`. Primary files MUST be named `report.md` (for Reports) or `research.md` (for Research).
+3. **Scope (MUST):** Use `Reports/` for long-form status, analysis, or summary output intended for Douglas to read. Use `Research/` for investigation findings, comparative analysis, or reference gathering. Ad-hoc notes, scratch, and session handoffs do NOT belong here — they belong in `.floyd/` within the relevant project.
+4. **Governance (MUST):** The Floyd Docs-specific `FLOYD.md` at the folder root is the scoped authority for this location. It is invoked on request, not automatically. Cross-repo document rules still live in this contract.
+5. **No secrets (MUST NOT):** Never deposit credentials, API keys, or sensitive configuration here. The Google Drive backing means content may sync to cloud caches.
+
+### What belongs here vs. what doesn't
+
+| Belongs | Does NOT belong |
+|---|---|
+| Reports written for Douglas | Scratch / in-progress agent work |
+| Research findings and comparisons | Session handoffs (use `.floyd/`) |
+| Long-form analysis output | Secrets, credentials, tokens |
+| Migration / audit records for Douglas | Per-project documentation (use the project repo) |
+| Snapshots of investigations | Arbitrary file dumps |
+
+### Relation to `~/Documents/`
+
+`~/Documents/` holds **user-facing session records** that belong to Douglas personally and live only on his Mac. Floyd Docs holds **shared agent deposits** that are cloud-backed and available to all agents across sessions. The two are complementary, not duplicative.
+
+---
+
 ## Forbidden Document Patterns
 
 These patterns are disallowed regardless of context:
@@ -284,9 +329,9 @@ When creating such a file, structure it so that a future Claude session (or futu
 
 ---
 
-## Enforcement Posture (v1.3.0)
+## Enforcement Posture (v1.4.0)
 
-This contract is **advisory** in v1.3.0. Agents should follow it; violations should be flagged. Hard enforcement (a `bootstrap.sh --verify-docs` command that scans for forbidden patterns) is deferred to v1.4.0.
+This contract is **advisory** in v1.4.0. Agents should follow it; violations should be flagged. Hard enforcement (a `bootstrap.sh --verify-docs` command that scans for forbidden patterns) is deferred to v1.5.0.
 
 ---
 

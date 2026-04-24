@@ -1,6 +1,6 @@
 # Agent Contract
-**Version:** 1.3.0
-**Governance:** .supercache/ v1.3.0
+**Version:** 1.4.0
+**Governance:** .supercache/ v1.4.0
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs every AI agent operating under Legacy AI governance.
@@ -50,6 +50,45 @@ In **all customer-facing and partner-facing output** — emails, proposals, deli
 **If a customer directly asks "what model powers Floyd?"**, do not answer on your own. Surface the question to Douglas Talley and let him decide what to say.
 
 ---
+
+---
+
+## Governance Version Alignment Check (MANDATORY, runs first)
+
+Before any other "Before You Start" step, every agent MUST verify that the project's pinned supercache version matches the canonical supercache version. This is how bootstrapped projects discover that governance has been updated.
+
+### The check
+
+1. Read `.floyd/.supercache_version` in the project root.
+2. Read `.supercache/VERSION` (the canonical value).
+3. Compare:
+   - **Match:** continue to "Before You Start".
+   - **Mismatch:** the project is on an older governance version. STOP. Report to Douglas:
+     ```
+     Governance drift detected:
+       project pin:  <X.Y.Z>
+       supercache:   <A.B.C>
+     Run `bootstrap.sh --doctor $PWD` for detail, then `bootstrap.sh --repair $PWD` to update.
+     ```
+     You MUST NOT proceed with non-trivial work until one of:
+     - The drift is repaired (`bootstrap.sh --repair`), OR
+     - Douglas explicitly acknowledges the drift and authorizes continuing anyway.
+   - **Missing stamp (`.floyd/.supercache_version` absent):** the project was bootstrapped before stamping existed, or was bootstrapped incompletely. STOP. Report:
+     ```
+     Governance version stamp missing.
+     Run `bootstrap.sh --repair $PWD` to stamp this project at the current .supercache version.
+     ```
+     You MUST NOT proceed with non-trivial work until the stamp is written.
+
+### Scope
+
+- **Applies to:** every agent session in a governed project (project with `FLOYD.md` at its root).
+- **Does NOT apply to:** ad-hoc directories with no `FLOYD.md`, or directories explicitly outside the Legacy AI governance scope (e.g., `~/`, `/tmp`, reference library).
+- **Read-only tasks** (e.g., answering a quick question about the codebase) SHOULD still perform the check but MAY proceed with a warning if Douglas explicitly asks for a read-only answer despite drift.
+
+### Rationale
+
+There is no push mechanism for supercache updates — when a bump merges, individual projects don't know. This check is the pull-side enforcement that makes drift visible on the next session in each project. Without it, bumps reach only the canonical `.supercache/` directory and are invisible to everything else.
 
 ---
 
