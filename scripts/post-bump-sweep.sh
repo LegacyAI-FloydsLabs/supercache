@@ -96,8 +96,12 @@ for root in "${SCAN_ROOTS[@]}"; do
   done < <(find "$root" -maxdepth 4 -name "FLOYD.md" -type f 2>/dev/null)
 done
 
-# Deduplicate
-mapfile -t PROJECTS < <(printf '%s\n' "${PROJECTS[@]}" | sort -u)
+# Deduplicate (bash 3.2-compatible; macOS ships bash 3.2 by default)
+TMP_PROJECTS=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && TMP_PROJECTS+=("$line")
+done < <(printf '%s\n' "${PROJECTS[@]}" | sort -u)
+PROJECTS=("${TMP_PROJECTS[@]}")
 
 if [[ ${#PROJECTS[@]} -eq 0 ]]; then
   echo "No governed projects discovered. Nothing to do."
