@@ -1,6 +1,6 @@
 # Agent Contract
-**Version:** 1.4.0
-**Governance:** .supercache/ v1.4.0
+**Version:** 1.4.1
+**Governance:** .supercache/ v1.4.1
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs every AI agent operating under Legacy AI governance.
@@ -89,6 +89,34 @@ Before any other "Before You Start" step, every agent MUST verify that the proje
 ### Rationale
 
 There is no push mechanism for supercache updates — when a bump merges, individual projects don't know. This check is the pull-side enforcement that makes drift visible on the next session in each project. Without it, bumps reach only the canonical `.supercache/` directory and are invisible to everything else.
+
+---
+
+## Cross-Harness Memory Bridge (MANDATORY when `$FLOYD_GOVERNANCE_CONTEXT` is set)
+
+Some Floyd-family harnesses (Crush-derived: `superfloyd`, `ff`, `floyd-surgical`, `floyd-10x`, `fork`) lack native session-start hooks. To still observe environment-level policies, their wrapper scripts source `~/.claude/hooks/floyd-harness-bootstrap.sh`, which loads `~/.claude/MEMORY.md` (the global environment-memory file) plus any drift advisory into a temp file and exports the path via the `$FLOYD_GOVERNANCE_CONTEXT` environment variable.
+
+### The check
+
+If `$FLOYD_GOVERNANCE_CONTEXT` is set in your environment, you MUST:
+
+1. Read the file at the path it points to before any non-trivial work.
+2. Treat its contents as the same priority as this contract — it carries the deal, the operating constraints, voice IDs, and other environment-level facts agreed with Douglas.
+3. Apply any preference / constraint / identity-fact declared therein for the duration of the session.
+
+If `$FLOYD_GOVERNANCE_CONTEXT` is NOT set, this rule does not apply (Claude Code reads `~/.claude/MEMORY.md` directly via its session-start hook; OhMyFloyd reads it via its extension hook).
+
+### Why this exists
+
+Crush-derived harnesses are the production workhorses (Z.AI GLM models 90% of work, MiniMax 9%). They must observe the same environment-level policies as Claude Code, despite running a different runtime that lacks first-class session hooks. Same content (`~/.claude/MEMORY.md`), three different transports:
+
+| Harness family | Transport |
+|---|---|
+| Claude Code | `~/.claude/hooks/session-start.sh` (registered in `~/.claude/settings.json`) |
+| OhMyFloyd / Pi / OhMyPi | `~/.omp/agent/hooks/pre/governance-alignment.ts` (extension hook) |
+| Crush-derived (`superfloyd` et al.) | Wrapper-script bridge → `$FLOYD_GOVERNANCE_CONTEXT` (this section) |
+
+This rule is what makes the bridge mechanical: the wrapper exports the env var, this contract makes reading it MANDATORY, so the workhorses can't silently bypass governance.
 
 ---
 

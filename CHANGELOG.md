@@ -4,6 +4,48 @@ Newest first.
 
 ---
 
+## v1.4.1 — 2026-04-25
+
+Scope: cross-harness governance compliance. Make the v1.4.0 alignment work mechanical for non-Claude-Code harnesses (OhMyFloyd via TypeScript extension, Crush-derived via wrapper-script bridge).
+
+### Added
+
+- **Cross-Harness Memory Bridge** section in `contracts/agent-contract.md`. Mandates that any agent finding `$FLOYD_GOVERNANCE_CONTEXT` set in its environment MUST read the referenced file before non-trivial work. Closes the "different harnesses interpret governance differently" gap by giving Crush-derived workhorses a mechanical path to the same `~/.claude/MEMORY.md` that Claude Code reads directly.
+- **Companion infrastructure outside `.supercache/`** (not in this PR but documented here for the propagation record):
+  - `~/.claude/MEMORY.md` — single source of truth for environment-level facts.
+  - `~/.claude/hooks/session-start.sh` — Claude Code transport.
+  - `~/.omp/agent/hooks/pre/governance-alignment.ts` — OhMyFloyd transport.
+  - `~/.claude/hooks/floyd-harness-bootstrap.sh` — Crush-family bootstrap; sourced by harness wrapper scripts (e.g., `/opt/homebrew/bin/superfloyd`).
+
+### Changed
+
+- **`contracts/agent-contract.md`** — new section after "Governance Version Alignment Check" and before "Before You Start". Version bumped 1.4.0 → 1.4.1.
+- **`VERSION`**, **`README.md`**, **`contracts/document-management.md`**, **`contracts/execution-contract.md`** — version headers bumped 1.4.0 → 1.4.1 to keep the precommit drift check happy. No content changes in those files.
+
+### Unchanged (explicitly)
+
+- `contracts/git-discipline.md`, `contracts/repo-structure.md`, `contracts/repo-hygiene.md` — untouched.
+- `templates/floyd-md-template.md` — not modified in this release. Future projects bootstrapped via `bootstrap.sh --init` will get the `agent-contract.md` reference automatically; the new env-var rule applies via the universal contract, not via per-project FLOYD.md content.
+
+### Migration step (post-merge)
+
+Same as v1.4.0:
+
+```bash
+bash /Volumes/SanDisk1Tb/.supercache/scripts/post-bump-sweep.sh --repair
+```
+
+This re-stamps governed projects to 1.4.1 so the SessionStart drift check in Claude Code passes cleanly.
+
+### Verification plan (post-merge)
+
+1. `cat /Volumes/SanDisk1Tb/.supercache/VERSION` → expect `1.4.1`
+2. `grep -c "Cross-Harness Memory Bridge" /Volumes/SanDisk1Tb/.supercache/contracts/agent-contract.md` → expect ≥1
+3. `bash ~/.claude/hooks/session-start.sh` from a CURRENT project → memory loads, no drift notice
+4. (When superfloyd is run): wrapper sources `floyd-harness-bootstrap.sh`, exports `$FLOYD_GOVERNANCE_CONTEXT`, agent reads it per the new contract section
+
+---
+
 ## v1.4.0 — 2026-04-24
 
 Scope: add canonical homes for agent-written reports and research; strengthen doc-management enforcement language; introduce scoped Floyd Docs governance.

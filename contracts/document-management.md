@@ -1,6 +1,6 @@
 # Document Management Contract
-**Version:** 1.4.0
-**Governance:** .supercache/ v1.4.0
+**Version:** 1.4.1
+**Governance:** .supercache/ v1.4.1
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs what documents agents create, where those documents live, how they are named, and how they are maintained over time. It is the authority for document lifecycle and anti-cruft enforcement.
