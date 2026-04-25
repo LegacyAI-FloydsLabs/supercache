@@ -1,9 +1,11 @@
 # Legacy AI — Service Catalog
 # All active subscriptions with verified costs.
-# Receipt-verified 2026-04-07. READ-ONLY for agents.
+# Receipt-verified 2026-04-07. Updated 2026-04-17 with cancellations and DO audit.
+# This file is READ-ONLY for agents.
 
-monthly_total: "$259.38 (post-consolidation target)"
-current_total: "$493.36 (pre-consolidation)"
+monthly_total: "$311.38 (post-cancellation, pre-resize)"
+current_total: "$416.37 (2 droplets + active services, excluding cancelled)"
+note: "Spotify and Supabase cancelled 2026-04-17 by Douglas. DO has 2 droplets ($18+$24=$42), not 1."
 
 active:
   - service: Anthropic Claude
@@ -12,11 +14,7 @@ active:
     purpose: primary AI brain
     status: keep
 
-  - service: Supabase
-    plan: Pro (LegacyAI org)
-    cost: "$65.00/mo (base $25 + 4 DBs x $10)"
-    purpose: development databases (none in production)
-    status: EXIT — moving to OrbStack/local. Export Legacy-Field-Command data first.
+
 
   - service: ElevenLabs
     plan: Creator
@@ -71,10 +69,27 @@ active:
     status: keep
 
   - service: DigitalOcean
-    plan: "1 droplet (resized)"
-    cost: "$6.00/mo (target)"
-    purpose: always-on spine + Tailscale relay
-    status: resize from $42
+    plan: "2 droplets (audit 2026-04-17)"
+    cost: "$42.00/mo total ($18 + $24)"
+    purpose: always-on spine + Tailscale relay + Qdrant vector DB (RagBot3000)
+    status: RESIZE primary to $6/mo + DECIDE on qdrant-vector-db
+    droplets:
+      - name: ubuntu-s-2vcpu-2gb-nyc3-01
+        id: 539792529
+        cost: "$18/mo (s-2vcpu-2gb)"
+        ip: 167.99.62.204
+        dns: floyd.legacyai.space
+        running: tailscale, certbot
+        stopped: deer-flow
+        resize_target: s-1vcpu-1gb at $6/mo (save $12/mo)
+      - name: qdrant-vector-db
+        id: 544067548
+        cost: "$24/mo (s-2vcpu-4gb)"
+        ip: 159.65.221.69
+        dns: none (no public DNS)
+        project: RagBot3000
+        os: Docker on Ubuntu 22.04
+        action: DECIDE — destroy ($24 saved) or keep for RagBot3000
 
   - service: IFTTT
     plan: Pro
@@ -90,17 +105,19 @@ active:
 gcp_provisioned:
   - service: Vertex AI Search (Discovery Engine)
     project: legacyai-marketplace
-    cost: "~$0.002/query after credit expiry"
-    credit: "$1,000 Gen App Builder (expires 2026-04-12)"
+    cost: "~$0.002/query (pay-per-use, no credit remaining)"
+    credit: "$1,000 Gen App Builder (EXPIRED 2026-04-12)"
     purpose: curated knowledge retrieval for agents
-    status: provisioned 2026-04-07
+    status: provisioned 2026-04-07, credit expired, charges will accrue if used
+    risk: "Disable if not actively used to avoid charges"
 
   - service: Dialogflow CX
     project: legacyai-marketplace
-    cost: "basic intents free, knowledge queries pennies"
-    credit: "$600 Dialogflow CX (expires 2026-04-12)"
+    cost: "basic intents free, knowledge queries pennies (pay-per-use, no credit remaining)"
+    credit: "$600 Dialogflow CX (EXPIRED 2026-04-12)"
     purpose: customer-facing chatbot
-    status: provisioned 2026-04-07
+    status: provisioned 2026-04-07, credit expired, charges will accrue if used
+    risk: "Disable if not actively used to avoid charges"
 
 annual_prepaid:
   - service: ZAI
@@ -114,28 +131,35 @@ annual_prepaid:
 pending_cancellation:
   - service: Zapier
     cost: "$29.99/mo"
-    reason: IFTTT Pro replaces it
-    action: migrate automations first
+    reason: IFTTT Pro was intended to replace, but Zapier is still needed
+    action: BLOCKED — PSI Post-Call Pipeline uses ChatGPT + HubSpot upsert + Google Calendar. IFTTT cannot replicate steps 2-4. Keep until pipeline is rewritten as direct API.
+    webhook: https://hooks.zapier.com/hooks/catch/20937683/usnfvpk/
+    zap_definition: /Volumes/Storage/PSI_CCaaS/zapier_agent_prompt.md
 
-  - service: Supabase Pro
-    cost: "$65.00/mo"
-    reason: all projects in development, none in production. Moving to OrbStack/local.
-    action: export Legacy-Field-Command data (7,600 rows), then cancel
-
-  - service: Hostinger
+  - service: Hostinger Hosting
     cost: "$13.99/mo"
-    reason: Vercel Pro absorbs hosting
-    action: deploy legacyai.space on Vercel first
+    reason: Vercel Pro absorbs hosting. DNS authority stays on Hostinger.
+    action: cancel Business Web Hosting (auto-renews 2026-05-08). Keep domain registrations.
+    api_verified: 2026-04-17 (16 subscriptions fetched from billing API)
 
   - service: Docker Desktop
     cost: "$11.00/mo"
     reason: CLI is free for individuals
     action: verify docker CLI works after cancel
 
+cancelled:
   - service: Spotify Premium
     cost: "$10.99/mo"
-    reason: trial ending, not business-critical
-    action: cancel before payment starts
+    cancelled_date: "2026-04-17"
+    cancelled_by: Douglas Talley
+    confirmation: verbal confirmation
+
+  - service: Supabase Pro
+    cost: "$65.00/mo"
+    cancelled_date: "2026-04-17"
+    cancelled_by: Douglas Talley
+    confirmation: verbal confirmation
+    note: Pro tier cancelled. Legacy-Field-Command data export status unknown.
 
 
 # =============================================================================
