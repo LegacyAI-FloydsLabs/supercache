@@ -35,11 +35,13 @@ EXCLUDE_PATTERNS=(
   "supercache.retired-"            # any retired backup
   "floyd-v5-backup-"               # time-stamped backups
   "floyd_doc_backup_"
+  "backup-storage-"                # drive-root backup snapshots (e.g. backup-storage-2026-04-15)
   "dist"
   "build"
   "target"                         # rust
   "vendor"
   ".floyd-docs-backup"
+  "\\.floyd/agent"                 # agent scaffolds/templates; not real projects
 )
 
 BOOTSTRAP="/Volumes/SanDisk1Tb/.supercache/bootstrap.sh"
