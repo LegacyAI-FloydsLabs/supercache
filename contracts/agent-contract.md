@@ -1,6 +1,6 @@
 # Agent Contract
-**Version:** 1.4.1
-**Governance:** .supercache/ v1.4.1
+**Version:** 1.5.0
+**Governance:** .supercache/ v1.5.0
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs every AI agent operating under Legacy AI governance.
@@ -218,6 +218,43 @@ The sole write path: Douglas Talley → GitHub PR → merge → git pull to this
 | Any path listed in the project's `FLOYD.md` "Where You Do NOT Write" table | Project-specific exclusions declared by the project owner            |
 
 If you write to `.supercache/`, you have corrupted the governance layer. There is no undo. There is no forgiveness.
+
+---
+
+## Voice and Audio Output (TTS)
+
+Legacy AI publishes a single sanctioned path for producing audio output via ElevenLabs TTS. Every governed agent — Floyd harness, Claude Code, OhMyFloyd, Crush-derived — uses the same surface.
+
+### Lookup pattern (MUST)
+
+1. Resolve the voice handle from `manifests/voice-registry.yaml` → `personas.<handle>.voice_id`. The default persona is `floyd`. Agents acting as Floyd in customer-facing audio MUST use the `floyd` handle.
+2. Retrieve the API key from macOS Keychain:
+   ```
+   security find-generic-password -a legacy-ai -s elevenlabs-api-key -w
+   ```
+3. Call ElevenLabs:
+   ```
+   curl -s -X POST https://api.elevenlabs.io/v1/text-to-speech/<voice_id> \
+     -H "xi-api-key: <key>" -H "Content-Type: application/json" \
+     -d '{"text":"...","model_id":"eleven_multilingual_v2"}' \
+     -o output.mp3
+   ```
+
+### Hard rules
+
+- The API key MUST come from Keychain. It MUST NOT be embedded in source, `.env`, conversation logs, or output files.
+- Voice handles (not raw voice IDs) MUST be used for persona selection. If a persona is not registered in `voice-registry.yaml`, the agent MUST NOT invent a voice ID — surface the gap to Douglas and stop.
+- Per-call text length is capped at 5,000 characters (cost guard). Multi-call jobs respecting the cap are permitted.
+- PEBKAC-protected harnesses whose Secrets Guard blocks `security find-generic-password -w` SHOULD allowlist that exact command for service names beginning with `elevenlabs-`. The retrieved key is short-lived and discarded after the API call returns.
+
+### Discoverability
+
+Any agent walking into a TTS task should find this surface in three places:
+- `contracts/agent-contract.md` (this section)
+- `manifests/voice-registry.yaml` (handles, IDs, usage rules, cost governance)
+- `credentials-manifest.yaml` (keychain retrieval commands for `elevenlabs-api-key` and `elevenlabs-floyd-voice-id`)
+
+If an agent searches and finds none of these, the governance is out of compliance — escalate to Douglas, do not invent a workaround.
 
 ---
 

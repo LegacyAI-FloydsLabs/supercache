@@ -4,6 +4,55 @@ Newest first.
 
 ---
 
+## v1.5.0 — 2026-04-26
+
+Scope: TTS access surface. Make ElevenLabs voice synthesis available to every governed harness — including PEBKAC-protected workhorses — by registering the credential pattern, persona-to-voice mapping, and contract section in the canonical governance layer.
+
+### Added
+
+- **`manifests/voice-registry.yaml`** — new manifest mapping persona handles to ElevenLabs voice IDs. v1 declares `floyd` → `FKIWV9cvZ5iFxzOJPHGP`. Voice IDs are not secrets (they identify which voice, not how to authenticate); they live here for tidy lookup. The API key remains in macOS Keychain. Includes usage rules (lookup by handle only, never paste IDs into agent code), per-call character cap (5000), and Creator-plan cost governance.
+- **Voice and Audio Output (TTS) section** in `contracts/agent-contract.md`. Specifies the canonical lookup pattern (resolve persona handle → voice_id via voice-registry.yaml, retrieve API key via `security find-generic-password -a legacy-ai -s elevenlabs-api-key -w`, call ElevenLabs TTS endpoint). Hard rules: voice IDs MUST be looked up by handle, never pasted; API key MUST come from Keychain — never from `.env`, source, or conversation; if a persona is unregistered, the agent MUST surface the gap to Douglas, not invent a voice_id.
+- **Two `credentials-manifest.yaml` entries** (file remains untracked per governance rule):
+  - `elevenlabs-api-key` — TTS scope only, $22/mo Creator plan, 100k chars/mo. Status PENDING until Douglas runs `security add-generic-password` with the actual API key.
+  - `elevenlabs-floyd-voice-id` — voice identifier (not a secret). STORED in Keychain on 2026-04-26.
+- **`scripts/governance-bump.sh`** — single-command deploy harness for governance bumps. Idempotent. Reads pending plan from `scripts/pending/`. Subcommands: `status`, `simulate`, `apply`, `verify`, `clean`. Authored to make future bumps mechanical and 100%-confidence-gated.
+
+### Changed
+
+- **`contracts/agent-contract.md`** — version banner bumped 1.4.1 → 1.5.0; new section inserted between "Where You Do NOT Write" and "Port Rules".
+- **`VERSION`**, **`README.md`** — version headers bumped 1.4.1 → 1.5.0 to keep the precommit drift check happy.
+
+### Unchanged (explicitly)
+
+- `contracts/document-management.md`, `contracts/execution-contract.md`, `contracts/git-discipline.md`, `contracts/repo-structure.md`, `contracts/repo-hygiene.md` — untouched.
+- `templates/floyd-md-template.md` — not modified. Future projects bootstrapped via `bootstrap.sh --init` will inherit the new TTS section through the universal contract reference.
+- `manifests/credential-rotation-policy.yaml`, `manifests/port-allocation-policy.yaml`, `manifests/service-catalog.yaml` — untouched. (Service catalog already lists ElevenLabs at the org level; the new manifest adds operational mapping detail.)
+
+### Migration step (post-merge)
+
+```bash
+bash /Volumes/SanDisk1Tb/.supercache/scripts/post-bump-sweep.sh --repair
+```
+
+This re-stamps every governed project's `.floyd/.supercache_version` to `1.5.0` so SessionStart drift checks pass cleanly.
+
+**Pre-use step (Douglas only — agents cannot do this):**
+```bash
+security add-generic-password -a legacy-ai -s elevenlabs-api-key -w '<actual-api-key>' -U
+```
+
+Until that runs, the registry is correct but the API key entry resolves to nothing. Voice ID is already stored.
+
+### Verification plan (post-merge)
+
+1. `cat /Volumes/SanDisk1Tb/.supercache/VERSION` → expect `1.5.0`
+2. `grep -c "Voice and Audio Output (TTS)" /Volumes/SanDisk1Tb/.supercache/contracts/agent-contract.md` → expect ≥1
+3. `grep -c "FKIWV9cvZ5iFxzOJPHGP" /Volumes/SanDisk1Tb/.supercache/manifests/voice-registry.yaml` → expect ≥1
+4. `security find-generic-password -a legacy-ai -s elevenlabs-floyd-voice-id -w` → expect `FKIWV9cvZ5iFxzOJPHGP`
+5. `bash /Volumes/SanDisk1Tb/.supercache/scripts/governance-bump.sh verify` → exit 0
+6. After Douglas adds the API key: any harness can run the canonical `curl` from voice-registry.yaml's header comment and produce audio.
+
+
 ## v1.4.1 — 2026-04-25
 
 Scope: cross-harness governance compliance. Make the v1.4.0 alignment work mechanical for non-Claude-Code harnesses (OhMyFloyd via TypeScript extension, Crush-derived via wrapper-script bridge).

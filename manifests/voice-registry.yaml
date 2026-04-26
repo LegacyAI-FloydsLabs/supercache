@@ -1,0 +1,54 @@
+# Legacy AI — Voice Registry
+# Maps named persona handles to ElevenLabs voice IDs.
+# READ-ONLY for agents. Voice IDs are not secrets — they identify which voice,
+# not how to authenticate. The API key is the sensitive credential and lives
+# in macOS Keychain (see credentials-manifest.yaml → elevenlabs-api-key).
+#
+# Governance: .supercache/ v1.5.0
+# Owner: Douglas Talley / Legacy AI
+# Provider: ElevenLabs (Creator plan, see service-catalog.yaml)
+#
+# Lookup pattern for agents:
+#   1. Resolve persona handle here → voice_id
+#   2. Retrieve API key:
+#      security find-generic-password -a legacy-ai -s elevenlabs-api-key -w
+#   3. Call ElevenLabs TTS:
+#      curl -s -X POST https://api.elevenlabs.io/v1/text-to-speech/<voice_id> \
+#        -H "xi-api-key: <key>" -H "Content-Type: application/json" \
+#        -d '{"text":"...","model_id":"eleven_multilingual_v2"}' \
+#        -o output.mp3
+
+version: 1
+default_persona: floyd
+default_model: eleven_multilingual_v2
+
+personas:
+  floyd:
+    voice_id: FKIWV9cvZ5iFxzOJPHGP
+    description: "Primary Floyd's Labs narrator. Use for any agent acting as Floyd."
+    use_for:
+      - "Floyd persona output"
+      - "Executive briefings"
+      - "Internal reports and audiobooks"
+      - "Strategic memos for Douglas"
+    registered_in_governance: 1.5.0
+
+# Add additional personas (legacy-narrator, gordy, etc.) in future bumps.
+# Each new persona requires:
+#   1. Voice cloned/selected at https://elevenlabs.io/app/voice-lab
+#   2. New entry under `personas:` with voice_id + description + use_for
+#   3. Governance version bump (patch is sufficient — additive change)
+#   4. Update `.supercache/CHANGELOG.md` with the addition
+
+usage_rules:
+  - "Voice IDs MUST be looked up by handle, not pasted into agent code."
+  - "API key MUST come from Keychain via the documented retrieval command. Never embed in source, .env, or conversation."
+  - "Agents acting as Floyd in customer-facing audio MUST use the `floyd` persona unless explicitly overridden by Douglas."
+  - "For internal-only deliverables, any registered persona is permitted."
+  - "If a persona is not registered here, the agent MUST NOT invent a voice_id. Surface the gap to Douglas and stop."
+
+cost_governance:
+  plan: "Creator ($22/mo, 100k characters/month)"
+  per_call_max_chars: 5000
+  rationale: "Single-call cap prevents runaway spend if a long document is accidentally fed in. Multi-call jobs are allowed but each invocation must respect the cap."
+  monitor: "https://elevenlabs.io/app/usage"
