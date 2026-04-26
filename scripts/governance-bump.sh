@@ -315,8 +315,10 @@ cmd_verify() {
   # Optional extra rules from verify-rules.txt — one grep per line:
   # format: <relative_file>::<literal_grep_string>
   if [ -f "$PENDING/verify-rules.txt" ]; then
-    while IFS='::' read -r rel needle; do
-      [ -z "$rel" ] && continue
+    while IFS= read -r rule; do
+      [ -z "$rule" ] && continue
+      rel="${rule%%::*}"
+      needle="${rule#*::}"
       if grep -qF "$needle" "$SUPERCACHE/$rel" 2>/dev/null; then
         ok "$rel contains '$needle'"
       else
