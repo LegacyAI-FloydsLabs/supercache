@@ -4,6 +4,87 @@ Newest first.
 
 ---
 
+## v1.6.2 — 2026-04-30
+
+Scope: extend v1.6.1's no-delete enforcement from Claude Code only to **every agent harness on this machine that exposes a PreTool hook surface**. Lift the deletion patterns + path allowlist into a shared rules file (`~/.local/share/legacy-ai/no-delete/rules.json`) and a shared core library (`~/.local/share/legacy-ai/no-delete/core.js`). Each harness ships a thin adapter that delegates to the core. No vendor lock-in.
+
+### Added (outside .supercache/)
+
+- **`~/.local/share/legacy-ai/no-delete/rules.json`** — single source of truth for deletion regex patterns + allowlisted ephemeral cache paths + block message template. Edited only via governance bumps.
+- **`~/.local/share/legacy-ai/no-delete/core.js`** — pure check function (`checkCommand(cmd, {rulesPath, harness}) → {allow} | {allow:false, message}`). No I/O beyond rule loading; no `process.exit`. Adapters translate the verdict into the harness-specific block primitive.
+- **`~/.local/bin/floyd-no-delete-check`** — generic shell wrapper. Reads JSON-on-stdin (Claude Code / Factory.ai compatible) or accepts a command on argv (`floyd-no-delete-check rm -rf /tmp/foo` or `--cmd "rm ..."`). Used by harnesses without a structured PreTool hook protocol (Codex CLI, Aider, raw SDK scripts).
+- **`~/.factory/hooks/no-delete-guard.js`** + **`~/.factory/hooks/hooks.json`** PreToolUse Execute entry — Factory.ai droid adapter. Hook protocol mirrors Claude Code's (JSON-on-stdin, exit 2 to block).
+- **`~/.opencode/plugins/legacy-ai-no-delete/`** — OpenCode plugin. Registers `tool.execute.before`; throws on block (OpenCode aborts the tool call). Requires manual reference from `opencode.json` (`"plugin": [".../index.js"]`) — OpenCode does not auto-discover from `.opencode/plugins/`.
+- **`~/.config/floyd/plugins/legacy-ai-no-delete/`** — Floyd CLI (omp v14.x) adapter. Subscribes to `tool_call` events and returns `{block: true, reason}`. Auto-discovered by Floyd from `~/.config/floyd/plugins/`.
+
+### Changed (outside .supercache/)
+
+- **`~/.claude/scripts/hooks/no-delete-guard.js`** — refactored to a thin wrapper that requires the shared core. Patterns + allowlist no longer hardcoded in this file. Behavior identical to v1.6.1 from the user's perspective; future pattern changes ship by editing `rules.json` only.
+- **`~/.claude/settings.json`** — PreToolUse Bash hook entry pointed at the refactored adapter (path unchanged; jq merge replaces any prior `no-delete-guard.js` command entry to keep the registration idempotent).
+
+### Added (inside .supercache/)
+
+- **`CHANGELOG.md` entry** for v1.6.2 (this file).
+
+### Changed (inside .supercache/)
+
+- **`VERSION`** — bumped 1.6.1 → 1.6.2.
+- **`README.md`** — version header bumped.
+- **`contracts/agent-contract.md`** — version + governance headers bumped 1.6.1 → 1.6.2. No content change in this bump.
+
+### Documentation (outside .supercache/)
+
+- **`~/legacy-governance-pending/v1.6.2/docs/harness-coverage.md`** — supplementary doc enumerating coverage tier per harness (mechanical / wrapper / contract). Stays in the staging tree as install-time reference, not in `.supercache/contracts/`. The contract authority remains v1.6.0's `repo-sanitation.md`; v1.6.2 only changes WHO can mechanically enforce it.
+
+### Unchanged (explicitly)
+
+- `manifests/`, `templates/`, `scripts/governance-bump.sh`, `scripts/post-bump-sweep.sh` — untouched.
+- The deletion patterns and allowlist are byte-identical to v1.6.1; v1.6.2 only changes WHERE those rules live (extracted to shared JSON) and WHO can enforce them (every harness, not just Claude Code).
+- `floyd-quarantine` — unchanged from v1.6.1.
+
+### Coverage matrix (post-bump)
+
+| Harness            | Hook surface                        | Coverage   | Adapter                                                  |
+|--------------------|-------------------------------------|------------|----------------------------------------------------------|
+| Claude Code        | `settings.json` PreToolUse Bash     | mechanical | `~/.claude/scripts/hooks/no-delete-guard.js`             |
+| Factory.ai droid   | `hooks.json` PreToolUse Execute     | mechanical | `~/.factory/hooks/no-delete-guard.js`                    |
+| OpenCode           | `tool.execute.before` plugin        | mechanical | `~/.opencode/plugins/legacy-ai-no-delete/` *(opt-in via opencode.json)* |
+| Floyd CLI (omp)    | `pi.on("tool_call")` → `{block}`    | mechanical | `~/.config/floyd/plugins/legacy-ai-no-delete/`           |
+| Codex CLI          | none (only `[mcp_servers]`)         | wrapper    | `floyd-no-delete-check` from prompt-driven shell guard   |
+| Aider              | none                                | wrapper    | `floyd-no-delete-check` from prompt-driven shell guard   |
+| Cursor             | none                                | contract   | repo-sanitation.md authority only                        |
+| Gemini CLI         | none                                | contract   | repo-sanitation.md authority only                        |
+| Raw SDK scripts    | n/a (user-authored)                 | wrapper    | author calls `floyd-no-delete-check` before any rm-shaped op |
+
+### Migration step (post-merge)
+
+```bash
+bash /Volumes/SanDisk1Tb/.supercache/scripts/post-bump-sweep.sh --repair
+```
+
+Re-stamps every governed project's `.floyd/.supercache_version` to `1.6.2`.
+
+### Verification plan (post-merge)
+
+1. `cat /Volumes/SanDisk1Tb/.supercache/VERSION` → expect `1.6.2`
+2. `test -f ~/.local/share/legacy-ai/no-delete/rules.json && echo OK` → `OK`
+3. `test -f ~/.local/share/legacy-ai/no-delete/core.js && echo OK` → `OK`
+4. `test -x ~/.local/bin/floyd-no-delete-check && echo OK` → `OK`
+5. `~/.local/bin/floyd-no-delete-check --cmd "rm -rf /Volumes/Storage/important"; echo $?` → `2`
+6. `~/.local/bin/floyd-no-delete-check --cmd "rm -rf /tmp/foo"; echo $?` → `0`
+7. `node ~/.claude/scripts/hooks/no-delete-guard.js <<< '{"tool_name":"Bash","tool_input":{"command":"rm -rf /Volumes/Storage/x"}}'; echo $?` → `2`
+8. (if Factory droid present) `node ~/.factory/hooks/no-delete-guard.js <<< '{"tool_name":"Execute","tool_input":{"command":"rm -rf /Volumes/Storage/x"}}'; echo $?` → `2`
+9. `bash /Volumes/SanDisk1Tb/.supercache/scripts/governance-bump.sh verify` → exit 0
+
+### Rationale
+
+v1.6.1 left a vendor-lock-in gap: the contract was harness-agnostic but the mechanical enforcement was Claude-Code-only. Every other harness (Factory droid, OpenCode, Floyd CLI, Codex, Aider, raw SDK scripts) was protected only by the contract, which is honor-system. v1.6.2 closes the gap by making mechanical enforcement match the contract's scope.
+
+The shared core design means future pattern changes (new deletion idioms agents reach for) ship as edits to a single JSON file. No per-harness drift. No "we updated Claude but forgot OpenCode."
+
+The wrapper is the safety net for everything without a structured hook surface. A prompt-driven agent on Codex or Aider can be instructed via the project's CLAUDE.md / FLOYD.md / system prompt to invoke `floyd-no-delete-check` before any deletion-shaped operation, which still gives mechanical enforcement at the cost of one shell-out.
+
+
 ## v1.6.1 — 2026-04-30
 
 Scope: mechanical enforcement of the v1.6.0 deletion prohibition. Ship the PreToolUse no-delete-guard hook (Node-based, pattern-matches deletion commands in Bash tool calls) and the `floyd-quarantine` helper (atomic move + WHY.md + LEDGER.jsonl append). No contract content changes — version headers and CHANGELOG only on the supercache side; the user-level installation lives in `~/.claude/scripts/hooks/` and `~/.local/bin/`.
