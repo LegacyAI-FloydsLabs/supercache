@@ -4,6 +4,57 @@ Newest first.
 
 ---
 
+## v1.6.1 — 2026-04-30
+
+Scope: mechanical enforcement of the v1.6.0 deletion prohibition. Ship the PreToolUse no-delete-guard hook (Node-based, pattern-matches deletion commands in Bash tool calls) and the `floyd-quarantine` helper (atomic move + WHY.md + LEDGER.jsonl append). No contract content changes — version headers and CHANGELOG only on the supercache side; the user-level installation lives in `~/.claude/scripts/hooks/` and `~/.local/bin/`.
+
+### Added (outside .supercache/)
+
+- **`~/.claude/scripts/hooks/no-delete-guard.js`** — Claude Code PreToolUse hook that pattern-matches deletion commands (`rm`, `rm -rf`, `unlink`, `rmdir`, `git clean`, `git rm`, `shutil.rmtree`, `os.remove`, `os.unlink`, `fs.unlink`, `fs.rm`, `Remove-Item`, `find -delete`, `find -exec rm`) and blocks them with exit 2 and a pointer to `floyd-quarantine`. Allowlist permits cleanup of ephemeral cache directories (`/tmp/`, `__pycache__`, `.pytest_cache`, `.ruff_cache`, `.mypy_cache`, `node_modules`, `.next`, `.turbo`, `dist/`, `build/`) when `rm`/`rmdir`/`unlink` is the only command and ALL targets are inside the allowlist.
+- **`~/.local/bin/floyd-quarantine`** — bash helper. Usage: `floyd-quarantine <path> --reason <category> --note "<one-liner>" [--agent <id>]`. Auto-detects project root by walking up for `.floyd/` or `FLOYD.md`, computes relative path, moves target to `<project-root>/.floyd/quarantine/<YYYY-MM-DD>/<rel-path>`, authors WHY.md per `repo-sanitation.md §3.3` schema, appends a JSON line to `LEDGER.jsonl`, uses `git mv` if the target is tracked. Refuses to quarantine inside `.supercache/`.
+- **`~/.claude/settings.json` PreToolUse hook entry** — registers the no-delete-guard.js as a hook on the Bash tool. Installation script patches the JSON in place (preserves existing hooks).
+
+### Added (inside .supercache/)
+
+- **CHANGELOG.md entry** for v1.6.1 (this file).
+
+### Changed (inside .supercache/)
+
+- **`VERSION`** — bumped 1.6.0 → 1.6.1.
+- **`README.md`** — version header bumped 1.6.0 → 1.6.1.
+- **`contracts/agent-contract.md`** — version + governance headers bumped 1.6.0 → 1.6.1. No content change in this bump.
+
+### Unchanged (explicitly)
+
+- All other contracts under `contracts/` — untouched.
+- `manifests/`, `templates/`, `scripts/governance-bump.sh`, `scripts/post-bump-sweep.sh` — untouched.
+- The repo-sanitation.md authority remains v1.6.0; v1.6.1 only adds the mechanical enforcement layer.
+
+### Migration step (post-merge)
+
+```bash
+bash /Volumes/SanDisk1Tb/.supercache/scripts/post-bump-sweep.sh --repair
+```
+
+This re-stamps every governed project's `.floyd/.supercache_version` to `1.6.1`.
+
+### Verification plan (post-merge)
+
+1. `cat /Volumes/SanDisk1Tb/.supercache/VERSION` → expect `1.6.1`
+2. `test -x ~/.local/bin/floyd-quarantine && echo OK` → expect `OK`
+3. `test -f ~/.claude/scripts/hooks/no-delete-guard.js && echo OK` → expect `OK`
+4. `node ~/.claude/scripts/hooks/no-delete-guard.js <<< '{"tool_name":"Bash","tool_input":{"command":"rm -rf /tmp/foo"}}'; echo $?` → expect `0` (allowlisted /tmp/)
+5. `node ~/.claude/scripts/hooks/no-delete-guard.js <<< '{"tool_name":"Bash","tool_input":{"command":"rm -rf /Volumes/Storage/important"}}'; echo $?` → expect `2` (blocked)
+6. `floyd-quarantine` (bare invocation) → expect usage printout, exit 1
+7. `bash /Volumes/SanDisk1Tb/.supercache/scripts/governance-bump.sh verify` → exit 0
+
+### Rationale
+
+v1.6.0 ships the contract — the words. v1.6.1 ships the mechanism — the runtime that enforces those words at the harness layer. The hook is a belt-and-suspenders measure; it cannot catch every deletion path (e.g., a Python script the agent writes that internally calls `os.remove`), but it catches the overwhelming majority of paths agents reach for when they reach for deletion. The helper makes the alternative (quarantine) one-line ergonomic, so there's no friction-driven excuse to bypass.
+
+The hook fails open on parse errors and is allowlisted for legitimate cache cleanup so it doesn't block normal work.
+
+
 ## v1.6.0 — 2026-04-30
 
 Scope: repository sanitation regime. Establish a single, non-negotiable rule across both code and document management — **agents do not delete; they quarantine.** Define the quarantine mechanism, the daily bootstrap routine that enforces sanitation on every session, and the execution contracts that prove both happened. Supersede the deletion provisions of `repo-hygiene.md` and the `Delete` lifecycle action of `document-management.md`.
