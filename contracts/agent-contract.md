@@ -1,6 +1,6 @@
 # Agent Contract
-**Version:** 1.5.0
-**Governance:** .supercache/ v1.5.0
+**Version:** 1.6.0
+**Governance:** .supercache/ v1.6.0
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs every AI agent operating under Legacy AI governance.
@@ -73,12 +73,7 @@ Before any other "Before You Start" step, every agent MUST verify that the proje
      You MUST NOT proceed with non-trivial work until one of:
      - The drift is repaired (`bootstrap.sh --repair`), OR
      - Douglas explicitly acknowledges the drift and authorizes continuing anyway.
-   - **Missing stamp (`.floyd/.supercache_version` absent):** the project was bootstrapped before stamping existed, or was bootstrapped incompletely. STOP. Report:
-     ```
-     Governance version stamp missing.
-     Run `bootstrap.sh --repair $PWD` to stamp this project at the current .supercache version.
-     ```
-     You MUST NOT proceed with non-trivial work until the stamp is written.
+   - **Missing stamp (`.floyd/.supercache_version` absent):** the project is ungoverned. STOP. You are in ENTRY PROTOCOL. Read `.supercache/contracts/governance-entry.md` immediately and execute the full bootstrap sequence — including the repository report with minimum 3 critic-check rounds per `.supercache/contracts/repository-report-spec.md`. You MUST NOT proceed with any implementation work until the project is stamped at the canonical governance version per the entry contract.
 
 ### Scope
 
@@ -137,6 +132,8 @@ Complete every step below before making any change to any file. No exceptions.
 11. Read `.supercache/contracts/document-management.md` — Anti-Cruft Rule, canonical document homes, SSOT verification sweep protocol, reference materials tier.
 12. Read `.supercache/contracts/repo-hygiene.md` — `.gitignore` baselines per language, cleanup triggers, project root tidiness standards.
 13. Read `.supercache/manifests/model-routing.yaml` — this tells you which LLM to use for which task type.
+14. Read `.supercache/contracts/governance-entry.md` — if this project is ungoverned (no `.floyd/.supercache_version`), the entry protocol defined there triggers. You must complete bootstrap before any implementation work.
+15. Read `.supercache/contracts/repository-report-spec.md` — if you are filling a repository report, every field must follow the evidence rules defined here. No guesses. No estimates. Every value cites its source.
 
 ---
 

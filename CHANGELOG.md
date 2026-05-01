@@ -4,6 +4,70 @@ Newest first.
 
 ---
 
+## v1.6.0 — 2026-04-30
+
+Scope: repository sanitation regime. Establish a single, non-negotiable rule across both code and document management — **agents do not delete; they quarantine.** Define the quarantine mechanism, the daily bootstrap routine that enforces sanitation on every session, and the execution contracts that prove both happened. Supersede the deletion provisions of `repo-hygiene.md` and the `Delete` lifecycle action of `document-management.md`.
+
+### Added
+
+- **`contracts/repo-sanitation.md`** — new authoritative contract for repository sanitation health and document management best practices. Codifies three hard rules (agents do not delete; removal means quarantine; only Douglas empties quarantine), the quarantine protocol (`<project>/.floyd/quarantine/<YYYY-MM-DD>/<original-relative-path>` + `WHY.md` + append-only `LEDGER.jsonl`), the ControlBoard alert requirement, the best-practices execution contracts for both doc management and repo sanitation, the daily bootstrap routine A→F, secret-hygiene escalation (above quarantine), and the user-override semantics (override grants scope, never deletion authority). Ends with the mandatory execution contract footer.
+
+### Changed
+
+- **`contracts/document-management.md`** (v1.4.1 → v1.6.0):
+  - Version + governance headers bumped.
+  - Forward-pointer added at top: removal flows route through `repo-sanitation.md`.
+  - "Document Lifecycle" section: `Delete` step replaced with `Quarantine`. Pointer to `repo-sanitation.md §3` for the protocol.
+  - "Archival vs deletion" section: rewritten as "Archival vs quarantine". Quarantine replaces delete.
+  - "Forbidden Document Patterns" section: clarified that the disposition for any forbidden pattern encountered in an existing project is **quarantine**, not delete.
+  - "Relationship to Other Contracts" section: `repo-sanitation.md` added.
+  - Enforcement Posture bumped to v1.6.0; advisory remains the posture for v1.6.0 (hard enforcement via PreToolUse hook arrives in v1.6.1).
+- **`contracts/repo-hygiene.md`** (v1.3.0 → v1.6.0):
+  - Version + governance headers bumped.
+  - Forward-pointer added at top: removal flows route through `repo-sanitation.md`.
+  - "Cleanup Triggers" subsections: deletion language replaced with quarantine language.
+  - "Safety Protocol Before Deleting Anything" section: replaced with a supersession notice pointing to `repo-sanitation.md §6.2`.
+  - "User Override" section: rewritten. Override grants scope (what to clean), never operation (deletion vs quarantine — quarantine is always the operation).
+  - "Dead Code and Commented-Out Blocks" section: `Default policy: delete` rescinded. Replaced with quarantine-extract protocol that points to `repo-sanitation.md §6.3`.
+  - "Relationship to Other Contracts" section: `repo-sanitation.md` added.
+  - Enforcement Posture bumped to v1.6.0; advisory remains the posture for v1.6.0 (hard enforcement arrives in v1.6.1 via PreToolUse hook).
+- **`contracts/agent-contract.md`** — version banner bumped 1.5.0 → 1.6.0; governance line bumped accordingly.
+- **`VERSION`**, **`README.md`** — version headers bumped 1.5.0 → 1.6.0 to keep the precommit drift check happy.
+
+### Unchanged (explicitly)
+
+- `contracts/execution-contract.md`, `contracts/git-discipline.md`, `contracts/repo-structure.md` — untouched.
+- `contracts/governance-entry.md`, `contracts/repository-report-spec.md` — these were authored by an earlier (DeepSeek) session and remain untracked. This bump does not promote them; that is a separate decision pending Douglas's review.
+- `manifests/` — untouched. No new manifests in this bump.
+- `templates/` — untouched. The bootstrap routine added in `repo-sanitation.md §7` applies via the universal contract reference, not by per-project FLOYD.md edits.
+- `scripts/governance-bump.sh`, `scripts/post-bump-sweep.sh` — untouched. The harness remains the only sanctioned write path.
+
+### Migration step (post-merge)
+
+```bash
+bash /Volumes/SanDisk1Tb/.supercache/scripts/post-bump-sweep.sh --repair
+```
+
+This re-stamps every governed project's `.floyd/.supercache_version` to `1.6.0` so SessionStart drift checks pass cleanly.
+
+### Verification plan (post-merge)
+
+1. `cat /Volumes/SanDisk1Tb/.supercache/VERSION` → expect `1.6.0`
+2. `test -f /Volumes/SanDisk1Tb/.supercache/contracts/repo-sanitation.md && echo OK` → expect `OK`
+3. `grep -c "Agents Do Not Delete" /Volumes/SanDisk1Tb/.supercache/contracts/repo-sanitation.md` → expect ≥1
+4. `grep -c "Removal Means Quarantine" /Volumes/SanDisk1Tb/.supercache/contracts/repo-sanitation.md` → expect ≥1
+5. `grep -c "Version:.. 1.6.0" /Volumes/SanDisk1Tb/.supercache/contracts/document-management.md` → expect ≥1
+6. `grep -c "Version:.. 1.6.0" /Volumes/SanDisk1Tb/.supercache/contracts/repo-hygiene.md` → expect ≥1
+7. `grep -c "Quarantine over deletion" /Volumes/SanDisk1Tb/.supercache/contracts/repo-hygiene.md` → expect ≥1
+8. `bash /Volumes/SanDisk1Tb/.supercache/scripts/governance-bump.sh verify` → exit 0
+
+### Rationale
+
+DeepSeek's session on 2026-04-29 demonstrated the failure mode this contract closes: an agent acting in good faith deleted or overwrote files it had no authority to touch, and rationalized the action against an absent rule. The previous `repo-hygiene.md` "Safety Protocol Before Deleting Anything" was a checklist, not a prohibition — agents could (and did) rationalize past it. The new regime is unambiguous: the operation is quarantine, and the *operation* is non-negotiable regardless of any *scope* the user granted. Combined with the daily bootstrap routine (which makes every session start with a sanitation pass) and the ControlBoard alert (which makes quarantine visible), the build-up is always under Douglas's control without delegating destructive authority to agents.
+
+This bump is contracts-only. The mechanical enforcement (PreToolUse hook + `floyd-quarantine` helper + SessionStart bootstrap) ships in v1.6.1.
+
+
 ## v1.5.0 — 2026-04-26
 
 Scope: TTS access surface. Make ElevenLabs voice synthesis available to every governed harness — including PEBKAC-protected workhorses — by registering the credential pattern, persona-to-voice mapping, and contract section in the canonical governance layer.

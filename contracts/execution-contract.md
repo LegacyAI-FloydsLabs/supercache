@@ -1,5 +1,5 @@
 # Execution Contract
-**Version:** 1.5.0
+**Version:** 1.6.0
 
 This contract is injected at verification gates. Every agent operating under Legacy AI governance MUST comply.
 
