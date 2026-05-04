@@ -1,6 +1,6 @@
 # Agent Contract
-**Version:** 1.6.2
-**Governance:** .supercache/ v1.6.2
+**Version:** 1.7.0
+**Governance:** .supercache/ v1.7.0
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs every AI agent operating under Legacy AI governance.
@@ -133,7 +133,11 @@ Complete every step below before making any change to any file. No exceptions.
 12. Read `.supercache/contracts/repo-hygiene.md` — `.gitignore` baselines per language, cleanup triggers, project root tidiness standards.
 13. Read `.supercache/manifests/model-routing.yaml` — this tells you which LLM to use for which task type.
 14. Read `.supercache/contracts/governance-entry.md` — if this project is ungoverned (no `.floyd/.supercache_version`), the entry protocol defined there triggers. You must complete bootstrap before any implementation work.
-15. Read `.supercache/contracts/repository-report-spec.md` — if you are filling a repository report, every field must follow the evidence rules defined here. No guesses. No estimates. Every value cites its source.
+15. Read `.floyd/rules.md` (deployed from `.supercache/contracts/rules.md`) — **MECHANICALLY ENFORCED**. This file contains the Mandatory Execution Contract, Evidence Rules, Anti-Fabrication Requirements, Required Output Structure, Hard Gate, Blocker Handling, No Self-Attestation, and Anti-Deception Requirements. Every rule in this file is enforced — not suggested. Violations are governance failures. If this file is missing, run `bootstrap.sh --repair` before proceeding.
+
+16. Read `.floyd/repository_report_template.md` — if this project does not have a completed `SSOT/repository_report.json` with `_verified: true` and `_critic_rounds >= 3`, you MUST fill the report by performing a thorough code review of the project. Every field must be determined from code evidence per `.supercache/contracts/repository-report-spec.md`. The report must pass minimum 3 critic-check rounds. No implementation work is permitted until the report is verified. This is mechanically enforced — not optional.
+
+17. Read `.supercache/contracts/repository-report-spec.md` — if you are filling a repository report, every field must follow the evidence rules defined here. No guesses. No estimates. Every value cites its source.
 
 ---
 

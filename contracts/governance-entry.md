@@ -1,6 +1,6 @@
 # Governance Entry Contract
-**Version:** 1.5.0
-**Governance:** .supercache/ v1.5.0
+**Version:** 1.7.0
+**Governance:** .supercache/ v1.7.0
 **Type:** Mandatory — read on first entry to any directory
 **Applies to:** All agents, all models, all harnesses
 
@@ -41,17 +41,27 @@ fi
 Before touching anything in this directory, read these files in order:
 
 1. `/Volumes/SanDisk1Tb/.supercache/contracts/governance-entry.md` (this file)
-2. `/Volumes/SanDisk1Tb/.supercache/contracts/repository-report-spec.md`
-3. `/Volumes/SanDisk1Tb/.supercache/contracts/agent-contract.md`
-4. `/Volumes/SanDisk1Tb/.supercache/templates/floyd-md-template.md`
-5. `/Volumes/SanDisk1Tb/.supercache/templates/ssot-template.md`
+2. `/Volumes/SanDisk1Tb/.supercache/contracts/rules.md` — **MECHANICALLY ENFORCED execution contract**. Every rule herein is enforced, not suggested.
+3. `/Volumes/SanDisk1Tb/.supercache/contracts/repository-report-spec.md`
+4. `/Volumes/SanDisk1Tb/.supercache/contracts/agent-contract.md`
+5. `/Volumes/SanDisk1Tb/.supercache/templates/floyd-md-template.md`
+6. `/Volumes/SanDisk1Tb/.supercache/templates/ssot-template.md`
+7. `/Volumes/SanDisk1Tb/.supercache/templates/repository-report-template.md`
 
-### Step 2: Create Required Directory Structure
+### Step 2: Create Required Directory Structure and Deploy Contracts
 
 ```bash
 mkdir -p .floyd SSOT Issues
 ```
 
+Deploy mechanically enforced contracts into `.floyd/`:
+
+```bash
+cp /Volumes/SanDisk1Tb/.supercache/contracts/rules.md .floyd/rules.md
+cp /Volumes/SanDisk1Tb/.supercache/templates/repository-report-template.md .floyd/repository_report_template.md
+```
+
+These files are checked at `--verify`. If either is missing, the project is non-compliant.
 Do NOT create source code directories. Bootstrap is assessment, not implementation.
 
 ### Step 3: Create FLOYD.md from Template
@@ -74,9 +84,11 @@ Read `.supercache/templates/claude-md-template.md`. Create `CLAUDE.md` at the pr
 
 Read `.supercache/templates/ssot-template.md`. Create `SSOT/{ProjectName}_SSOT.md` by copying the template and filling in the SanDisk1Tb Top-Level Inventory section if this project is on SanDisk1Tb.
 
-### Step 6: Fill Repository Report (CRITICAL — Most Rigorous Step)
+### Step 6: Fill Repository Report (MECHANICALLY ENFORCED — NO IMPLEMENTATION UNTIL VERIFIED)
 
-Read `/Volumes/SanDisk1Tb/.supercache/contracts/repository-report-spec.md` completely. Then read `.supercache/templates/repository-report-template.md` for the schema.
+**This step is not optional.** If `SSOT/repository_report.json` does not exist or has `_verified: false`, you MUST NOT proceed to any implementation work. This is mechanically enforced by the pi extension `governance-enforcement.ts` (blocks Write/Edit to source files and git commit) and the Claude `repo-report-enforcer.js` Stop hook.
+
+Read `/Volumes/SanDisk1Tb/.supercache/contracts/repository-report-spec.md` completely. Then read `.floyd/repository_report_template.md` for the schema.
 
 **Fill `SSOT/repository_report.json`** with all 12 fields. Every field MUST have a corresponding evidence citation in the `_evidence` companion object. No field may be guessed, estimated, or assumed.
 

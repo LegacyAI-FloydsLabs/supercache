@@ -1,7 +1,7 @@
 # Repository Sanitation & Document Hygiene Contract
 
-**Version:** 1.6.0
-**Governance:** .supercache/ v1.6.0
+**Version:** 1.7.0
+**Governance:** .supercache/ v1.7.0
 **Owner:** Douglas Talley / Legacy AI
 **Type:** Mandatory — applies to every agent on every task
 **Supersedes deletion provisions of:** `contracts/repo-hygiene.md` (v1.3.0+ deletion policy) and `contracts/document-management.md` (v1.4.1 lifecycle "Delete" step)

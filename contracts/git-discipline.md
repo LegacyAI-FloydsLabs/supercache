@@ -1,6 +1,6 @@
 # Git Discipline Contract
-**Version:** 1.3.0
-**Governance:** .supercache/ v1.3.0
+**Version:** 1.7.0
+**Governance:** .supercache/ v1.7.0
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs how agents interact with git, GitHub, and related version-control operations on behalf of Legacy AI. It combines Git best practices with strict IP protection and brand reputation safeguarding.

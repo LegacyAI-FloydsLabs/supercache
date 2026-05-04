@@ -137,6 +137,24 @@ cmd_init() {
         ok "Created .floyd/agent_log.jsonl"
     fi
 
+    # Repository report template — agents must fill this via code review at bootstrap
+    local report_file="$target/.floyd/repository_report_template.md"
+    if [[ ! -f "$report_file" ]]; then
+        cp "$TEMPLATES/repository-report-template.md" "$report_file"
+        ok "Created .floyd/repository_report_template.md"
+    else
+        warn ".floyd/repository_report_template.md already exists — skipping"
+    fi
+
+    # Rules contract — mandatory reading at every session
+    local rules_file="$target/.floyd/rules.md"
+    if [[ ! -f "$rules_file" ]]; then
+        cp "$CONTRACTS/rules.md" "$rules_file"
+        ok "Created .floyd/rules.md"
+    else
+        warn ".floyd/rules.md already exists — skipping"
+    fi
+
     # Version stamp
     echo "$SC_VERSION" > "$target/.floyd/.supercache_version"
     ok "Stamped .supercache/ version: $SC_VERSION"
@@ -198,6 +216,20 @@ cmd_info() {
         warn "No agent log found"
     fi
 
+    # Repository report template
+    if [[ -f "$target/.floyd/repository_report_template.md" ]]; then
+        ok "Repository report template present"
+    else
+        info "Repository report template not present — run --repair to deploy"
+    fi
+
+    # Rules contract
+    if [[ -f "$target/.floyd/rules.md" ]]; then
+        ok "Rules contract present"
+    else
+        info "Rules contract not present — run --repair to deploy"
+    fi
+
     # Version check
     if [[ -f "$target/.floyd/.supercache_version" ]]; then
         local proj_ver
@@ -246,6 +278,9 @@ cmd_verify() {
     check ".floyd/ directory exists" "[[ -d '$target/.floyd' ]]"
     check "Agent log exists" "[[ -f '$target/.floyd/agent_log.jsonl' ]]"
     check "Version stamp exists" "[[ -f '$target/.floyd/.supercache_version' ]]"
+    check "Repository report template deployed" "[[ -f '$target/.floyd/repository_report_template.md' ]]"
+    check "Rules contract deployed" "[[ -f '$target/.floyd/rules.md' ]]"
+
 
     if [[ -f "$target/.floyd/.supercache_version" ]]; then
         local proj_ver
@@ -528,14 +563,23 @@ cmd_bump_version() {
     fi
 
     # Files that must all carry the version string in lockstep
-    local files=(
+    # ALL contracts/ files with **Version:** headers must be bumped together.
+    local version_files=(
         "$SC_ROOT/VERSION"
         "$SC_ROOT/README.md"
         "$SC_ROOT/contracts/agent-contract.md"
         "$SC_ROOT/contracts/execution-contract.md"
+        "$SC_ROOT/contracts/governance-entry.md"
+        "$SC_ROOT/contracts/document-management.md"
+        "$SC_ROOT/contracts/git-discipline.md"
+        "$SC_ROOT/contracts/repo-hygiene.md"
+        "$SC_ROOT/contracts/repo-sanitation.md"
+        "$SC_ROOT/contracts/repo-structure.md"
+        "$SC_ROOT/contracts/repository-report-spec.md"
+        "$SC_ROOT/contracts/rules.md"
     )
 
-    for f in "${files[@]}"; do
+    for f in "${version_files[@]}"; do
         if [[ ! -f "$f" ]]; then
             fail "Expected file missing: $f"
             exit 1
@@ -548,30 +592,26 @@ cmd_bump_version() {
     fi
     ok "VERSION: $old_ver → $new_ver"
 
-    # README.md
-    if [[ "$dry_run" != "--dry-run" ]]; then
-        sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$SC_ROOT/README.md"
-    fi
-    ok "README.md: **Version:** $new_ver"
+    # All markdown files: bump **Version:** and **Governance:** strings
+    local md_files=()
+    for f in "${version_files[@]}"; do
+        [[ "$f" == *.md ]] && md_files+=("$f")
+    done
 
-    # agent-contract.md (Version line AND Governance line)
-    if [[ "$dry_run" != "--dry-run" ]]; then
-        sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$SC_ROOT/contracts/agent-contract.md"
-        sed -i '' "s|\*\*Governance:\*\* \.supercache/ v$old_ver|\*\*Governance:\*\* .supercache/ v$new_ver|" "$SC_ROOT/contracts/agent-contract.md"
-    fi
-    ok "contracts/agent-contract.md: Version + Governance → $new_ver"
-
-    # execution-contract.md
-    if [[ "$dry_run" != "--dry-run" ]]; then
-        sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$SC_ROOT/contracts/execution-contract.md"
-    fi
-    ok "contracts/execution-contract.md: **Version:** $new_ver"
+    for f in "${md_files[@]}"; do
+        local basename="$(basename "$f")"
+        if [[ "$dry_run" != "--dry-run" ]]; then
+            sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$f"
+            sed -i '' "s|\*\*Governance:\*\* \.supercache/ v$old_ver|\*\*Governance:\*\* .supercache/ v$new_ver|" "$f"
+        fi
+        ok "$basename: Version + Governance → $new_ver"
+    done
 
     echo ""
     if [[ "$dry_run" == "--dry-run" ]]; then
         info "Dry run complete. No files modified. Re-run without --dry-run to apply."
     else
-        ok "Version bumped in lockstep across 4 files: $old_ver → $new_ver"
+        ok "Version bumped in lockstep across ${#version_files[@]} files: $old_ver → $new_ver"
         info "Review the diff:  git -C $SC_ROOT diff"
         info "Commit manually with a message like:  'chore: bump version to $new_ver'"
     fi

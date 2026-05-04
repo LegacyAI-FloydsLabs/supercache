@@ -70,10 +70,26 @@ check_file_version() {
     fi
 }
 
-check_file_version "README.md"                       '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "README.md"
-check_file_version "contracts/agent-contract.md"     '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "agent-contract.md (Version)"
-check_file_version "contracts/agent-contract.md"     '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "agent-contract.md (Governance)"
-check_file_version "contracts/execution-contract.md" '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "execution-contract.md"
+check_file_version "README.md"                          '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "README.md"
+check_file_version "contracts/agent-contract.md"          '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "agent-contract.md (Version)"
+check_file_version "contracts/agent-contract.md"          '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "agent-contract.md (Governance)"
+check_file_version "contracts/execution-contract.md"      '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "execution-contract.md"
+check_file_version "contracts/governance-entry.md"        '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "governance-entry.md (Version)"
+check_file_version "contracts/governance-entry.md"        '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "governance-entry.md (Governance)"
+check_file_version "contracts/document-management.md"     '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "document-management.md (Version)"
+check_file_version "contracts/document-management.md"     '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "document-management.md (Governance)"
+check_file_version "contracts/git-discipline.md"          '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "git-discipline.md (Version)"
+check_file_version "contracts/git-discipline.md"          '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "git-discipline.md (Governance)"
+check_file_version "contracts/repo-hygiene.md"            '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "repo-hygiene.md (Version)"
+check_file_version "contracts/repo-hygiene.md"            '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "repo-hygiene.md (Governance)"
+check_file_version "contracts/repo-sanitation.md"         '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "repo-sanitation.md (Version)"
+check_file_version "contracts/repo-sanitation.md"         '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "repo-sanitation.md (Governance)"
+check_file_version "contracts/repo-structure.md"          '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "repo-structure.md (Version)"
+check_file_version "contracts/repo-structure.md"          '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "repo-structure.md (Governance)"
+check_file_version "contracts/repository-report-spec.md"  '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "repository-report-spec.md (Version)"
+check_file_version "contracts/repository-report-spec.md"  '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "repository-report-spec.md (Governance)"
+check_file_version "contracts/rules.md"                   '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "rules.md (Version)"
+check_file_version "contracts/rules.md"                   '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "rules.md (Governance)"
 
 if [[ ${#mismatches[@]} -gt 0 ]]; then
     echo "" >&2
