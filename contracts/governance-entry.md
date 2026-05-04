@@ -76,7 +76,7 @@ Read `.supercache/templates/ssot-template.md`. Create `SSOT/{ProjectName}_SSOT.m
 
 ### Step 6: Fill Repository Report (CRITICAL — Most Rigorous Step)
 
-Read `/Volumes/SanDisk1Tb/.supercache/contracts/repository-report-spec.md` completely. Then read `/Volumes/Storage/Legacy Agents/repository_report_template.md` for the schema.
+Read `/Volumes/SanDisk1Tb/.supercache/contracts/repository-report-spec.md` completely. Then read `.supercache/templates/repository-report-template.md` for the schema.
 
 **Fill `SSOT/repository_report.json`** with all 12 fields. Every field MUST have a corresponding evidence citation in the `_evidence` companion object. No field may be guessed, estimated, or assumed.
 

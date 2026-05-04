@@ -6,7 +6,7 @@ tiers:
   reasoning:
     provider: anthropic
     model: claude-opus-4-6
-    monthly_cost: "$200/mo (Max plan)"
+    monthly_cost: "# (see ~/legacy-credentials/model-costs.yaml)"
     use_for:
       - architecture_and_system_design
       - planning_and_decomposition
@@ -20,7 +20,7 @@ tiers:
     providers:
       - provider: zai
         model: default
-        annual_cost: "$250/yr prepaid"
+        annual_cost: "# (see ~/legacy-credentials/model-costs.yaml)"
         use_for:
           - coding_and_implementation
           - bulk_code_generation
@@ -28,7 +28,7 @@ tiers:
           - documentation_generation
       - provider: minimax
         model: default
-        annual_cost: "$200/yr prepaid"
+        annual_cost: "# (see ~/legacy-credentials/model-costs.yaml)"
         use_for:
           - coding_and_implementation
           - backup_to_zai
@@ -37,7 +37,7 @@ tiers:
   quick:
     provider: google
     model: gemini
-    monthly_cost: "1,000 monthly AI credits (included in Google AI Pro $19.99/mo)"
+    monthly_cost: "# (see ~/legacy-credentials/model-costs.yaml)"
     use_for:
       - simple_lookups
       - formatting_and_conversion
@@ -49,7 +49,7 @@ tiers:
     providers:
       - provider: huggingface
         via: [novita, groq]
-        monthly_cost: "$2/mo inference (included in HF Pro $9/mo)"
+        monthly_cost: "# (see ~/legacy-credentials/model-costs.yaml)"
         use_for:
           - experimentation
           - non_critical_tasks

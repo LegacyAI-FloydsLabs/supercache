@@ -4,7 +4,7 @@
 **Type:** Mandatory — referenced by GOVERNANCE-ENTRY.md
 **Applies to:** All agents filling `SSOT/repository_report.json`
 
-> This specification defines exactly how each field in the repository report template (`/Volumes/Storage/Legacy Agents/repository_report_template.md`) must be determined. No field may be filled without following the evidence rule below. Every field must cite its evidence source.
+> This specification defines exactly how each field in the repository report template (`/Volumes/SanDisk1Tb/.supercache/templates/repository-report-template.md`) must be determined. No field may be filled without following the evidence rule below. Every field must cite its evidence source.
 
 ---
 
