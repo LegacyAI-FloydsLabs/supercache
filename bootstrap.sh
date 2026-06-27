@@ -8,6 +8,7 @@
 #   bootstrap.sh --init [dir]                   Initialize governance in a project directory
 #   bootstrap.sh --info [dir]                   Show project orientation (SSOT, issues, agents)
 #   bootstrap.sh --verify [dir]                 Compliance check — pass/fail per artifact
+#   bootstrap.sh --doctor [dir]                 Alias for --verify (backward compatibility)
 #   bootstrap.sh --repair [dir]                 Fix missing/outdated artifacts
 #   bootstrap.sh --add-claude [dir]             Add a CLAUDE.md adapter to a project (opt-in)
 #   bootstrap.sh --bulk-init <parent> [flags]   Bulk retrofit --init + --add-claude across a parent dir
@@ -77,6 +78,183 @@ ok()   { echo -e "${GREEN}[OK]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 fail() { echo -e "${RED}[FAIL]${NC} $1"; }
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+
+valid_supercache_path() {
+    local target="$1"
+    local path="$target/.supercache"
+
+    if [[ -L "$path" ]]; then
+        [[ "$(cd -P "$path" && pwd)" == "$SC_ROOT" ]]
+        return
+    fi
+
+    if [[ -d "$path" && -f "$path/VERSION" ]]; then
+        [[ "$(cat "$path/VERSION")" == "$SC_VERSION" ]]
+        return
+    fi
+
+    return 1
+}
+
+sync_supercache_path() {
+    local target="$1"
+    local path="$target/.supercache"
+
+    if valid_supercache_path "$target"; then
+        ok ".supercache path current"
+        return 0
+    fi
+
+    if [[ ! -e "$path" && ! -L "$path" ]]; then
+        ln -s "$SC_ROOT" "$path"
+        ok "Linked .supercache -> $SC_ROOT"
+        return 0
+    fi
+
+    warn ".supercache exists but is not a current canonical symlink/copy: $path"
+    warn "Leaving it untouched for manual review/quarantine."
+    return 0
+}
+
+sync_governance_headers() {
+    local target="$1"
+    local -a files=()
+
+    [[ -f "$target/FLOYD.md" ]] && files+=("$target/FLOYD.md")
+    [[ -f "$target/CLAUDE.md" ]] && files+=("$target/CLAUDE.md")
+
+    local f
+    if [[ -d "$target/SSOT" ]]; then
+        for f in "$target"/SSOT/*.md; do
+            [[ -f "$f" ]] && files+=("$f")
+        done
+    fi
+    if [[ -d "$target/Issues" ]]; then
+        for f in "$target"/Issues/*.md; do
+            [[ -f "$f" ]] && files+=("$f")
+        done
+    fi
+
+    if [[ ${#files[@]} -eq 0 ]]; then
+        warn "No markdown governance headers found to refresh"
+        return 0
+    fi
+
+    python3 - "$SC_VERSION" "${files[@]}" <<'PY'
+import re
+import stat
+import sys
+from pathlib import Path
+
+version = sys.argv[1]
+updated = []
+
+for raw in sys.argv[2:]:
+    path = Path(raw)
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    except OSError:
+        continue
+
+    changed = False
+    has_version = False
+    has_governance = False
+    limit = min(40, len(lines))
+    for idx in range(limit):
+        newline = "\n" if lines[idx].endswith("\n") else ""
+        text = lines[idx].rstrip("\n")
+        if re.match(r"^\*\*Version:\*\*\s*.+$", text):
+            has_version = True
+        next_text = re.sub(r"^\*\*Version:\*\*\s*.+$", f"**Version:** {version}", text)
+        if re.match(r"^\*\*Governance:\*\*\s*\.supercache/\s*v.+$", text):
+            has_governance = True
+        next_text = re.sub(
+            r"^\*\*Governance:\*\*\s*\.supercache/\s*v.+$",
+            f"**Governance:** .supercache/ v{version}",
+            next_text,
+        )
+        if next_text != text:
+            lines[idx] = next_text + newline
+            changed = True
+
+    if path.name in {"FLOYD.md", "CLAUDE.md"} and (not has_version or not has_governance):
+        insert_at = 0
+        if lines and lines[0].strip() == "---":
+            for idx in range(1, min(40, len(lines))):
+                if lines[idx].strip() == "---":
+                    insert_at = idx + 1
+                    break
+        elif lines and lines[0].lstrip().startswith("#"):
+            insert_at = 1
+
+        insert = []
+        if insert_at > 0 and lines[insert_at - 1].strip():
+            insert.append("\n")
+        if not has_version:
+            insert.append(f"**Version:** {version}\n")
+        if not has_governance:
+            insert.append(f"**Governance:** .supercache/ v{version}\n")
+        if insert_at < len(lines) and lines[insert_at].strip():
+            insert.append("\n")
+        lines[insert_at:insert_at] = insert
+        changed = True
+
+    if changed:
+        mode = path.stat().st_mode
+        if not (mode & stat.S_IWUSR):
+            path.chmod(mode | stat.S_IWUSR)
+        path.write_text("".join(lines), encoding="utf-8")
+        if path.stat().st_mode != mode:
+            path.chmod(mode)
+        updated.append(str(path))
+
+for item in updated:
+    print(f"header-updated: {item}")
+PY
+}
+
+install_governed_precommit_hook() {
+    local target="$1"
+    local git_dir="$target/.git"
+    local hook_dir="$git_dir/hooks"
+    local hook="$hook_dir/pre-commit"
+
+    if [[ ! -d "$git_dir" ]]; then
+        info "No .git directory — skipping pre-commit hook install"
+        return 0
+    fi
+
+    mkdir -p "$hook_dir"
+
+    if [[ -e "$hook" || -L "$hook" ]]; then
+        info "pre-commit hook already exists — leaving unchanged"
+        return 0
+    fi
+
+    cat > "$hook" <<'HOOK'
+#!/usr/bin/env bash
+# Legacy AI governed pre-commit hook.
+# Installed by .supercache/bootstrap.sh repair.
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$REPO_ROOT"
+
+if [[ -x "$REPO_ROOT/.supercache/hooks/pre-commit.sh" ]]; then
+    "$REPO_ROOT/.supercache/hooks/pre-commit.sh"
+fi
+
+if [[ -x "$HOME/.local/share/legacy-ai/hooks/pre-commit-secret-scan.sh" ]]; then
+    "$HOME/.local/share/legacy-ai/hooks/pre-commit-secret-scan.sh"
+fi
+
+if [[ -x "$REPO_ROOT/scripts/secret-scan.sh" ]]; then
+    "$REPO_ROOT/scripts/secret-scan.sh" --staged
+fi
+HOOK
+    chmod +x "$hook"
+    ok "Installed governed pre-commit hook"
+}
 
 # --- Commands ---
 
@@ -280,6 +458,8 @@ cmd_verify() {
     check "Version stamp exists" "[[ -f '$target/.floyd/.supercache_version' ]]"
     check "Repository report template deployed" "[[ -f '$target/.floyd/repository_report_template.md' ]]"
     check "Rules contract deployed" "[[ -f '$target/.floyd/rules.md' ]]"
+    check ".supercache path resolves to current governance" "valid_supercache_path '$target'"
+    check "FLOYD.md governance header current" "grep -q '^\\*\\*Governance:\\*\\* \\.supercache/ v$SC_VERSION$' '$target/FLOYD.md'"
 
 
     if [[ -f "$target/.floyd/.supercache_version" ]]; then
@@ -291,6 +471,8 @@ cmd_verify() {
     # CLAUDE.md is optional. If present, verify it has the expected adapter structure.
     if [[ -f "$target/CLAUDE.md" ]]; then
         info "CLAUDE.md present — verifying adapter structure"
+        check "CLAUDE.md governance header current" \
+            "grep -q '^\\*\\*Governance:\\*\\* \\.supercache/ v$SC_VERSION$' '$target/CLAUDE.md'"
         check "CLAUDE.md references FLOYD.md as canonical" \
             "grep -q 'Canonical spec' '$target/CLAUDE.md' || grep -q 'FLOYD.md' '$target/CLAUDE.md'"
         check "CLAUDE.md has 'Agent Role on This Project' section" \
@@ -325,6 +507,10 @@ cmd_repair() {
     # Update version stamp
     echo "$SC_VERSION" > "$target/.floyd/.supercache_version"
     ok "Version stamp updated to $SC_VERSION"
+
+    sync_supercache_path "$target"
+    sync_governance_headers "$target"
+    install_governed_precommit_hook "$target"
 }
 
 cmd_add_claude() {
@@ -704,7 +890,7 @@ cmd_health() {
 case "${1:-}" in
     --init)         cmd_init "${2:-.}" ;;
     --info)         cmd_info "${2:-.}" ;;
-    --verify)       cmd_verify "${2:-.}" ;;
+    --verify|--doctor) cmd_verify "${2:-.}" ;;
     --repair)       cmd_repair "${2:-.}" ;;
     --add-claude)   cmd_add_claude "${2:-.}" ;;
     --bulk-init)    cmd_bulk_init "${2:-}" "${3:-}" "${4:-}" ;;
@@ -721,6 +907,7 @@ case "${1:-}" in
         echo "  --init [dir]                  Initialize governance in a project directory"
         echo "  --info [dir]                  Show project orientation"
         echo "  --verify [dir]                Compliance check (pass/fail)"
+        echo "  --doctor [dir]                Alias for --verify"
         echo "  --repair [dir]                Fix missing/outdated artifacts"
         echo "  --add-claude [dir]            Add a CLAUDE.md adapter to a project (opt-in)"
         echo "  --bulk-init <parent> [flags]  Retrofit --init + --add-claude across every project under a parent dir"

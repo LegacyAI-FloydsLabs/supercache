@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # post-bump-sweep.sh — walk all governed projects after a supercache VERSION bump
-#   and run `bootstrap.sh --doctor` (detect drift) + `--repair` (update stamp)
+#   and run `bootstrap.sh --verify` (detect drift) + `--repair` (update stamp)
 #   against each one.
 #
 # Usage:
-#   bash post-bump-sweep.sh                # dry-run (--doctor only, no repair)
-#   bash post-bump-sweep.sh --repair       # doctor + repair (updates stamps live)
+#   bash post-bump-sweep.sh                # dry-run (--verify only, no repair)
+#   bash post-bump-sweep.sh --repair       # verify + repair (updates stamps live)
 #   bash post-bump-sweep.sh --repair --yes # skip confirmation prompt
 #
 # Intended cadence: run after every supercache PR merges and a `git pull` has
@@ -26,22 +26,37 @@ SCAN_ROOTS=(
   "/Volumes/Storage"
 )
 
+# Match AXIOM governed-root inventory depth unless overridden by env.
+MAX_DEPTH="${MAX_DEPTH:-7}"
+
 # Patterns to exclude from project discovery.
 EXCLUDE_PATTERNS=(
-  "node_modules"
-  ".git"
-  ".supercache"                    # the governance dir itself
+  "(^|/)node_modules(/|$)"
+  "(^|/)\\.git(/|$)"
+  "(^|/)\\.supercache(/|$)"        # the governance dir itself
   "reference/"                     # read-only reference tier
+  "references/"
+  "docs/source/"                   # documentation source snapshots
+  "\\.claude/worktrees"            # Claude worktree copies
+  "worktrees/"
+  "quarantine"                     # forensic/reference quarantine copies
+  "\\.floyd/supercache-staging"    # generated staging copy
+  "omp-harness-storage/tmp"        # generated test/runtime artifacts
+  "pytest-of-"                     # pytest temporary governed roots
+  "pytest-"                        # pytest temporary governed roots
   "supercache.retired-"            # any retired backup
+  "retired"
   "floyd-v5-backup-"               # time-stamped backups
   "floyd_doc_backup_"
   "backup-storage-"                # drive-root backup snapshots (e.g. backup-storage-2026-04-15)
-  "dist"
-  "build"
-  "target"                         # rust
-  "vendor"
+  "backup"
+  "(^|/)dist(/|$)"
+  "(^|/)build(/|$)"
+  "(^|/)target(/|$)"               # rust
+  "(^|/)vendor(/|$)"
   ".floyd-docs-backup"
   "\\.floyd/agent"                 # agent scaffolds/templates; not real projects
+  "\\.omp/skills"                  # embedded skill/tooling package, not project root
 )
 
 BOOTSTRAP="/Volumes/SanDisk1Tb/.supercache/bootstrap.sh"
@@ -75,12 +90,20 @@ fi
 SC_VERSION="$(cat /Volumes/SanDisk1Tb/.supercache/VERSION)"
 echo ".supercache/ canonical version: $SC_VERSION"
 echo "Mode: $MODE"
+echo "Max depth: $MAX_DEPTH"
 echo ""
 
 # -------- discovery --------
 
 # Build exclusion regex for grep
 EXCLUDE_REGEX="$(IFS='|'; echo "${EXCLUDE_PATTERNS[*]}")"
+
+should_skip_project() {
+  local project_dir="$1"
+  local lower_dir
+  lower_dir="$(printf '%s' "$project_dir" | tr '[:upper:]' '[:lower:]')"
+  echo "$lower_dir" | grep -qE "$EXCLUDE_REGEX"
+}
 
 PROJECTS=()
 for root in "${SCAN_ROOTS[@]}"; do
@@ -91,11 +114,11 @@ for root in "${SCAN_ROOTS[@]}"; do
   while IFS= read -r floyd_path; do
     project_dir="$(dirname "$floyd_path")"
     # Skip if path matches any exclude pattern
-    if echo "$project_dir" | grep -qE "$EXCLUDE_REGEX"; then
+    if should_skip_project "$project_dir"; then
       continue
     fi
     PROJECTS+=("$project_dir")
-  done < <(find "$root" -maxdepth 4 -name "FLOYD.md" -type f 2>/dev/null)
+  done < <(find "$root" -maxdepth "$MAX_DEPTH" -name "FLOYD.md" -type f 2>/dev/null)
 done
 
 # Deduplicate (bash 3.2-compatible; macOS ships bash 3.2 by default)
@@ -144,10 +167,10 @@ OK_COUNT=0
 
 for p in "${PROJECTS[@]}"; do
   echo "━━━ $p ━━━"
-  if "$BOOTSTRAP" --doctor "$p"; then
+  if "$BOOTSTRAP" --verify "$p"; then
     :
   else
-    echo "  (doctor reported issues)"
+    echo "  (verify reported issues)"
   fi
 
   if [[ "$MODE" == "doctor-and-repair" ]]; then
