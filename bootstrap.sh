@@ -227,8 +227,10 @@ install_governed_precommit_hook() {
     mkdir -p "$hook_dir"
 
     if [[ -e "$hook" || -L "$hook" ]]; then
-        info "pre-commit hook already exists — leaving unchanged"
-        return 0
+        if ! grep -q "Installed by .supercache/bootstrap.sh repair." "$hook" 2>/dev/null; then
+            info "pre-commit hook already exists — leaving unchanged"
+            return 0
+        fi
     fi
 
     cat > "$hook" <<'HOOK'
@@ -251,9 +253,21 @@ fi
 if [[ -x "$REPO_ROOT/scripts/secret-scan.sh" ]]; then
     "$REPO_ROOT/scripts/secret-scan.sh" --staged
 fi
+
+while IFS= read -r nested_secret_scan; do
+    [[ "$nested_secret_scan" == "$REPO_ROOT/scripts/secret-scan.sh" ]] && continue
+    [[ -x "$nested_secret_scan" ]] || continue
+    "$nested_secret_scan" --staged
+done < <(
+    find "$REPO_ROOT" \
+        -path '*/.git/*' -prune -o \
+        -path '*/node_modules/*' -prune -o \
+        -path '*/.supercache/*' -prune -o \
+        -path '*/scripts/secret-scan.sh' -type f -perm -u+x -print 2>/dev/null
+)
 HOOK
     chmod +x "$hook"
-    ok "Installed governed pre-commit hook"
+    ok "Installed/updated governed pre-commit hook"
 }
 
 # --- Commands ---
