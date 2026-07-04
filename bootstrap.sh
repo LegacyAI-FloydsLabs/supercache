@@ -20,7 +20,6 @@
 #
 # Agent model:
 #   FLOYD.md is the canonical project spec. Required for every project.
-#   CLAUDE.md is the Claude-specific adapter. Optional. Opt-in via --add-claude.
 #
 # Environment:
 #   SUPERCACHE_ROOT   Override .supercache/ location (default: auto-detect)
@@ -121,7 +120,7 @@ sync_governance_headers() {
     local -a files=()
 
     [[ -f "$target/FLOYD.md" ]] && files+=("$target/FLOYD.md")
-    [[ -f "$target/CLAUDE.md" ]] && files+=("$target/CLAUDE.md")
+   
 
     local f
     if [[ -d "$target/SSOT" ]]; then
@@ -177,7 +176,7 @@ for raw in sys.argv[2:]:
             lines[idx] = next_text + newline
             changed = True
 
-    if path.name in {"FLOYD.md", "CLAUDE.md"} and (not has_version or not has_governance):
+    if path.name in {"FLOYD.md"} and (not has_version or not has_governance):
         insert_at = 0
         if lines and lines[0].strip() == "---":
             for idx in range(1, min(40, len(lines))):
@@ -372,14 +371,7 @@ cmd_info() {
         ok "FLOYD.md present ($(wc -l < "$target/FLOYD.md") lines) [canonical]"
     else
         fail "FLOYD.md missing"
-    fi
-
-    # CLAUDE.md (adapter, optional)
-    if [[ -f "$target/CLAUDE.md" ]]; then
-        ok "CLAUDE.md present ($(wc -l < "$target/CLAUDE.md") lines) [Claude adapter]"
-    else
-        info "CLAUDE.md not present (optional — run --add-claude to add)"
-    fi
+    fi【MY_WHISPER_TEST】test【MY_WHISPER_TEST】
 
     # SSOT
     if [[ -d "$target/SSOT" ]]; then
@@ -482,23 +474,6 @@ cmd_verify() {
         check "Version current ($proj_ver == $SC_VERSION)" "[[ '$proj_ver' == '$SC_VERSION' ]]"
     fi
 
-    # CLAUDE.md is optional. If present, verify it has the expected adapter structure.
-    if [[ -f "$target/CLAUDE.md" ]]; then
-        info "CLAUDE.md present — verifying adapter structure"
-        check "CLAUDE.md governance header current" \
-            "grep -q '^\\*\\*Governance:\\*\\* \\.supercache/ v$SC_VERSION$' '$target/CLAUDE.md'"
-        check "CLAUDE.md references FLOYD.md as canonical" \
-            "grep -q 'Canonical spec' '$target/CLAUDE.md' || grep -q 'FLOYD.md' '$target/CLAUDE.md'"
-        check "CLAUDE.md has 'Agent Role on This Project' section" \
-            "grep -q '## Agent Role on This Project' '$target/CLAUDE.md'"
-        check "CLAUDE.md has 'Division of Labor' section" \
-            "grep -q '## Division of Labor' '$target/CLAUDE.md'"
-        check "CLAUDE.md references execution contract" \
-            "grep -q 'execution-contract' '$target/CLAUDE.md'"
-    else
-        info "CLAUDE.md not present (optional — skipping adapter checks)"
-    fi
-
     echo ""
     if [[ $pass -eq $total ]]; then
         ok "PASS: $pass/$total checks passed"
@@ -527,14 +502,6 @@ cmd_repair() {
     install_governed_precommit_hook "$target"
 }
 
-cmd_add_claude() {
-    local target="${1:-.}"
-    target="$(cd "$target" && pwd)"
-    local project_name="$(basename "$target")"
-
-    info "Adding Claude adapter to: $target"
-    info "Using .supercache/ v${SC_VERSION} at: $SC_ROOT"
-
     # Project must already be governed
     if [[ ! -f "$target/FLOYD.md" ]]; then
         fail "FLOYD.md missing — run --init first. CLAUDE.md is an adapter, not a replacement."
@@ -546,24 +513,11 @@ cmd_add_claude() {
         exit 1
     fi
 
-    # CLAUDE.md — only if it doesn't exist
-    if [[ ! -f "$target/CLAUDE.md" ]]; then
-        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{VERSION}}/$SC_VERSION/g; s|{{SUPERCACHE_PATH}}|$SC_ROOT|g; s/{{DATE}}/$(date +%Y-%m-%dT%H:%M:%S%z)/g" \
-            "$TEMPLATES/claude-md-template.md" > "$target/CLAUDE.md"
-        ok "Created CLAUDE.md"
-    else
-        warn "CLAUDE.md already exists — skipping (will not overwrite project-specific content)"
-    fi
 
-    echo ""
-    ok "Claude adapter added for '$project_name'"
-    info "Edit $target/CLAUDE.md to fill in project-specific role and rules."
-    info "Run 'bootstrap.sh --verify $target' to confirm compliance."
 }
 
 cmd_bulk_init() {
     local parent="${1:-}"
-    local with_claude="${2:-}"
     local dry_run="${3:-}"
 
     if [[ -z "$parent" ]]; then
@@ -573,9 +527,6 @@ cmd_bulk_init() {
         fail "Walks the parent directory and runs --init on every directory that looks"
         fail "like a project (has a recognizable manifest file like package.json, Cargo.toml,"
         fail "pyproject.toml, go.mod, Package.swift, etc.) and lacks FLOYD.md."
-        fail ""
-        fail "By default, also creates CLAUDE.md via --add-claude logic. Pass --no-claude"
-        fail "to skip CLAUDE.md creation."
         fail ""
         fail "Use --dry-run to preview the target list without creating any files."
         exit 1
@@ -592,14 +543,12 @@ cmd_bulk_init() {
     local is_dry_run="no"
     for arg in "$with_claude" "$dry_run"; do
         case "$arg" in
-            --no-claude) add_claude_default="no" ;;
             --dry-run)   is_dry_run="yes" ;;
         esac
     done
 
     info "Bulk-init scanning: $parent"
     info "Mode: $([ "$is_dry_run" = "yes" ] && echo "DRY RUN (preview only)" || echo "EXECUTE")"
-    info "CLAUDE.md: $([ "$add_claude_default" = "yes" ] && echo "create" || echo "skip")"
     echo ""
 
     local -a skipped_existing=()
@@ -699,13 +648,7 @@ cmd_bulk_init() {
         echo ""
         info "Initializing: $n"
         if cmd_init "$d" > /dev/null 2>&1; then
-            ok "  FLOYD.md + SSOT + Issues + .floyd created"
-            if [[ "$add_claude_default" = "yes" ]]; then
-                if cmd_add_claude "$d" > /dev/null 2>&1; then
-                    ok "  CLAUDE.md created"
-                else
-                    warn "  CLAUDE.md creation failed (continuing)"
-                fi
+            ok "  FLOYD.md + SSOT + Issues + .floyd created" then
             fi
             success_count=$((success_count + 1))
         else
@@ -923,7 +866,6 @@ case "${1:-}" in
         echo "  --verify [dir]                Compliance check (pass/fail)"
         echo "  --doctor [dir]                Alias for --verify"
         echo "  --repair [dir]                Fix missing/outdated artifacts"
-        echo "  --add-claude [dir]            Add a CLAUDE.md adapter to a project (opt-in)"
         echo "  --bulk-init <parent> [flags]  Retrofit --init + --add-claude across every project under a parent dir"
         echo "                                Flags: --no-claude, --dry-run"
         echo "  --archive [dir]               Mark project for archival"
@@ -935,7 +877,6 @@ case "${1:-}" in
         echo ""
         echo "Agent model:"
         echo "  FLOYD.md is required (canonical project spec)."
-        echo "  CLAUDE.md is optional (Claude-specific adapter). Add with --add-claude."
         exit 1
         ;;
 esac
