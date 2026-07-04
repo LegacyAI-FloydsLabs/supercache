@@ -4,6 +4,24 @@ Newest first.
 
 ---
 
+## v1.7.1 — 2026-07-04
+
+Scope: repair the v1.7.x canonical governance repo after partial Claude-adapter removal left broken shell syntax, stale CLI routes, and version drift. This release finishes the removal without restoring Claude-specific agent positioning.
+
+### Fixed
+
+- **`bootstrap.sh`** — removed injected marker text, orphaned adapter-function fragments, undefined `cmd_add_claude` routing, and broken `cmd_bulk_init` shell structure.
+- **`scripts/post-bump-sweep.sh`** — accepts `--doctor` explicitly and handles zero discovered projects under `set -u`.
+- **`hooks/supercache-repo-precommit.sh`** — now checks `FLOYD.md`, `.floyd/.supercache_version`, and shell syntax so the previous failure mode is blocked before commit.
+- **Version lockstep** — bumped canonical version-bearing files and the self-governance stamp to `1.7.1`.
+
+### Removed
+
+- **`templates/claude-md-template.md`** — removed as an active governance template.
+- **Claude adapter workflow references** — removed active `--add-claude`, `--no-claude`, and generated `CLAUDE.md` guidance from bootstrap, templates, and contracts.
+
+---
+
 ## v1.6.2 — 2026-04-30
 
 Scope: extend v1.6.1's no-delete enforcement from Claude Code only to **every agent harness on this machine that exposes a PreTool hook surface**. Lift the deletion patterns + path allowlist into a shared rules file (`~/.local/share/legacy-ai/no-delete/rules.json`) and a shared core library (`~/.local/share/legacy-ai/no-delete/core.js`). Each harness ships a thin adapter that delegates to the core. No vendor lock-in.

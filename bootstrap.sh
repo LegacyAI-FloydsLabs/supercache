@@ -117,7 +117,6 @@ sync_governance_headers() {
     local -a files=()
 
     [[ -f "$target/FLOYD.md" ]] && files+=("$target/FLOYD.md")
-   
 
     local f
     if [[ -d "$target/SSOT" ]]; then
@@ -368,7 +367,7 @@ cmd_info() {
         ok "FLOYD.md present ($(wc -l < "$target/FLOYD.md") lines) [canonical]"
     else
         fail "FLOYD.md missing"
-    fi【MY_WHISPER_TEST】test【MY_WHISPER_TEST】
+    fi
 
     # SSOT
     if [[ -d "$target/SSOT" ]]; then
@@ -499,26 +498,14 @@ cmd_repair() {
     install_governed_precommit_hook "$target"
 }
 
-    # Project must already be governed
-    if [[ ! -f "$target/FLOYD.md" ]]; then
-        fail "FLOYD.md missing — run --init first. CLAUDE.md is an adapter, not a replacement."
-        exit 1
-    fi
-
-    if [[ ! -f "$TEMPLATES/claude-md-template.md" ]]; then
-        fail "Template missing: $TEMPLATES/claude-md-template.md"
-        exit 1
-    fi
-
-
-}
-
 cmd_bulk_init() {
     local parent="${1:-}"
-    local dry_run="${3:-}"
+    if [[ $# -gt 0 ]]; then
+        shift
+    fi
 
     if [[ -z "$parent" ]]; then
-        fail "Usage: bootstrap.sh --bulk-init <parent-dir> [--no-claude] [--dry-run]"
+        fail "Usage: bootstrap.sh --bulk-init <parent-dir> [--dry-run]"
         fail "Example: bootstrap.sh --bulk-init /Volumes/Storage/Development"
         fail ""
         fail "Walks the parent directory and runs --init on every directory that looks"
@@ -536,11 +523,11 @@ cmd_bulk_init() {
 
     parent="$(cd "$parent" && pwd)"
 
-    local add_claude_default="yes"
     local is_dry_run="no"
-    for arg in "$with_claude" "$dry_run"; do
+    for arg in "$@"; do
         case "$arg" in
             --dry-run)   is_dry_run="yes" ;;
+            *)           fail "Unknown --bulk-init flag: $arg"; exit 2 ;;
         esac
     done
 
@@ -645,8 +632,7 @@ cmd_bulk_init() {
         echo ""
         info "Initializing: $n"
         if cmd_init "$d" > /dev/null 2>&1; then
-            ok "  FLOYD.md + SSOT + Issues + .floyd created" then
-            fi
+            ok "  FLOYD.md + SSOT + Issues + .floyd created"
             success_count=$((success_count + 1))
         else
             fail "  init failed for $n (continuing with remaining projects)"
@@ -706,6 +692,8 @@ cmd_bump_version() {
     # ALL contracts/ files with **Version:** headers must be bumped together.
     local version_files=(
         "$SC_ROOT/VERSION"
+        "$SC_ROOT/.floyd/.supercache_version"
+        "$SC_ROOT/FLOYD.md"
         "$SC_ROOT/README.md"
         "$SC_ROOT/contracts/agent-contract.md"
         "$SC_ROOT/contracts/execution-contract.md"
@@ -729,8 +717,10 @@ cmd_bump_version() {
     # VERSION file
     if [[ "$dry_run" != "--dry-run" ]]; then
         echo "$new_ver" > "$SC_ROOT/VERSION"
+        echo "$new_ver" > "$SC_ROOT/.floyd/.supercache_version"
     fi
     ok "VERSION: $old_ver → $new_ver"
+    ok ".floyd/.supercache_version: $old_ver → $new_ver"
 
     # All markdown files: bump **Version:** and **Governance:** strings
     local md_files=()
@@ -846,8 +836,7 @@ case "${1:-}" in
     --info)         cmd_info "${2:-.}" ;;
     --verify|--doctor) cmd_verify "${2:-.}" ;;
     --repair)       cmd_repair "${2:-.}" ;;
-    --add-claude)   cmd_add_claude "${2:-.}" ;;
-    --bulk-init)    cmd_bulk_init "${2:-}" "${3:-}" "${4:-}" ;;
+    --bulk-init)    shift; cmd_bulk_init "$@" ;;
     --bump-version) cmd_bump_version "${2:-}" "${3:-}" ;;
     --archive)      cmd_archive "${2:-.}" ;;
     --health)       cmd_health ;;
@@ -863,8 +852,8 @@ case "${1:-}" in
         echo "  --verify [dir]                Compliance check (pass/fail)"
         echo "  --doctor [dir]                Alias for --verify"
         echo "  --repair [dir]                Fix missing/outdated artifacts"
-        echo "  --bulk-init <parent> [flags]  Retrofit --init + --add-claude across every project under a parent dir"
-        echo "                                Flags: --no-claude, --dry-run"
+        echo "  --bulk-init <parent> [flags]  Retrofit --init across every project under a parent dir"
+        echo "                                Flags: --dry-run"
         echo "  --archive [dir]               Mark project for archival"
         echo ""
         echo "Governance commands:"

@@ -32,7 +32,7 @@ tiers:
         use_for:
           - coding_and_implementation
           - backup_to_zai
-    notes: "Heavy lifting. Use for implementation work after Claude has planned it."
+    notes: "Heavy lifting. Use for implementation work after the plan and boundaries are clear."
 
   quick:
     provider: google

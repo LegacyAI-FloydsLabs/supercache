@@ -69,7 +69,7 @@ EOF
 require_pending() {
   if [ ! -d "$PENDING" ]; then
     err "No pending bump found at $PENDING"
-    err "Have an instance of Claude with the legacy-governance-assistant skill prepare a plan first."
+    err "Use the legacy-governance-assistant skill to prepare a plan first."
     exit 1
   fi
   for f in metadata.yaml changelog.md commit-message.txt; do

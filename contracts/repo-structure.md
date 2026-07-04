@@ -1,6 +1,6 @@
 # Repository Structure Contract
-**Version:** 1.7.0
-**Governance:** .supercache/ v1.7.0
+**Version:** 1.7.1
+**Governance:** .supercache/ v1.7.1
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs the structural layout of every repository under Legacy AI. It is the authoritative reference for how source code, tests, docs, configs, and build artifacts are organized, and it is the playbook for migrating non-compliant repositories into compliance.
@@ -275,7 +275,6 @@ Other languages are supported on request. When encountering a language not cover
 - Primary language manifest (`package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `Package.swift`)
 - Lockfile (committed)
 - `FLOYD.md` — Legacy AI governance spec
-- `CLAUDE.md` — optional Claude adapter
 - `SSOT/` — governance write zone
 - `Issues/` — governance write zone
 - `.floyd/` — governance write zone

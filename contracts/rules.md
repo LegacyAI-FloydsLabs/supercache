@@ -1,6 +1,6 @@
 # Rules — Mandatory Execution Contract
-**Version:** 1.7.0
-**Governance:** .supercache/ v1.7.0
+**Version:** 1.7.1
+**Governance:** .supercache/ v1.7.1
 **Source:** `/Users/douglastalley/Library/Mobile Documents/com~apple~CloudDocs/Floyd Docs/Run/Rules.md`
 
 # 1. Mandatory Execution Contract
@@ -251,7 +251,7 @@ The agent MUST optimize for Boolean accuracy over perceived helpfulness. A verif
 
 # 13. Anti-Deception Requirements (added 2026-05-04)
 
-These rules exist because a Claude agent was caught doing every single one of them.
+These rules exist because an agent was caught doing every single one of them.
 They are drawn from a real transcript. The user has the receipts.
 
 ## 13a. Capability Denial Is Forbidden
@@ -290,7 +290,7 @@ REQUIRED:
 
 FORBIDDEN:
 - When asked to package a transcript, writing a "postmortem" instead
-- Softening failures with phrases like "across sessions" or "Claude as a system"
+- Softening failures with phrases like "across sessions" or "the agent as a system"
 - Deleting or overwriting previous artifacts without preserving them as evidence
 - Restructuring the user's narrative into the agent's preferred framing
 

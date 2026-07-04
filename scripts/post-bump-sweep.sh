@@ -59,7 +59,9 @@ EXCLUDE_PATTERNS=(
   "\\.omp/skills"                  # embedded skill/tooling package, not project root
 )
 
-BOOTSTRAP="/Volumes/SanDisk1Tb/.supercache/bootstrap.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SUPERCACHE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BOOTSTRAP="$SUPERCACHE_ROOT/bootstrap.sh"
 MODE="doctor-only"
 ASSUME_YES="no"
 
@@ -67,6 +69,7 @@ ASSUME_YES="no"
 
 for arg in "$@"; do
   case "$arg" in
+    --doctor) MODE="doctor-only" ;;
     --repair) MODE="doctor-and-repair" ;;
     --yes|-y) ASSUME_YES="yes" ;;
     -h|--help)
@@ -87,7 +90,7 @@ if [[ ! -x "$BOOTSTRAP" ]]; then
   exit 1
 fi
 
-SC_VERSION="$(cat /Volumes/SanDisk1Tb/.supercache/VERSION)"
+SC_VERSION="$(cat "$SUPERCACHE_ROOT/VERSION")"
 echo ".supercache/ canonical version: $SC_VERSION"
 echo "Mode: $MODE"
 echo "Max depth: $MAX_DEPTH"
@@ -123,10 +126,15 @@ done
 
 # Deduplicate (bash 3.2-compatible; macOS ships bash 3.2 by default)
 TMP_PROJECTS=()
-while IFS= read -r line; do
-  [[ -n "$line" ]] && TMP_PROJECTS+=("$line")
-done < <(printf '%s\n' "${PROJECTS[@]}" | sort -u)
-PROJECTS=("${TMP_PROJECTS[@]}")
+if [[ ${#PROJECTS[@]} -gt 0 ]]; then
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && TMP_PROJECTS+=("$line")
+  done < <(printf '%s\n' "${PROJECTS[@]}" | sort -u)
+fi
+PROJECTS=()
+if [[ ${#TMP_PROJECTS[@]} -gt 0 ]]; then
+  PROJECTS=("${TMP_PROJECTS[@]}")
+fi
 
 if [[ ${#PROJECTS[@]} -eq 0 ]]; then
   echo "No governed projects discovered. Nothing to do."

@@ -1,7 +1,7 @@
 # Repository Sanitation & Document Hygiene Contract
 
-**Version:** 1.7.0
-**Governance:** .supercache/ v1.7.0
+**Version:** 1.7.1
+**Governance:** .supercache/ v1.7.1
 **Owner:** Douglas Talley / Legacy AI
 **Type:** Mandatory — applies to every agent on every task
 **Supersedes deletion provisions of:** `contracts/repo-hygiene.md` (v1.3.0+ deletion policy) and `contracts/document-management.md` (v1.4.1 lifecycle "Delete" step)
@@ -271,7 +271,7 @@ Per the project's overarching execution contract, every sanitation task MUST pro
 
 ## 7. Daily Bootstrap Routine (A → F, mandatory at every session start)
 
-This routine is the entry point for every Claude or agent session that lands in a project directory, governed or not. It is referenced by `governance-entry.md` (which handles ungoverned-project bootstrap) and inherited by every governed project's `FLOYD.md` via the SSOT template's quarantine pointer section.
+This routine is the entry point for every agent session that lands in a project directory, governed or not. It is referenced by `governance-entry.md` (which handles ungoverned-project bootstrap) and inherited by every governed project's `FLOYD.md` via the SSOT template's quarantine pointer section.
 
 ### A — Cleanup round
 - Walk the project tree
@@ -281,7 +281,7 @@ This routine is the entry point for every Claude or agent session that lands in 
 
 ### B — Documentation organization sweep
 - Verify canonical document homes per `document-management.md`
-- Verify the per-project governance file set: `FLOYD.md`, optional `CLAUDE.md`, `SSOT/<PROJECT>_SSOT.md`, `Issues/<PROJECT>_ISSUES.md`, `.floyd/agent_log.jsonl`
+- Verify the per-project governance file set: `FLOYD.md`, `SSOT/<PROJECT>_SSOT.md`, `Issues/<PROJECT>_ISSUES.md`, `.floyd/agent_log.jsonl`
 - Quarantine any anti-cruft violations per §5.2
 - Reconcile FLOYD.md governance header drift: log to `Issues/`, do NOT auto-bump
 

@@ -4,7 +4,7 @@ Skills are harness-agnostic capability definitions. They tell agents HOW to do s
 
 ## Available Skills
 
-### Claude Code Skills (349+ via ECC)
+### Imported Skills (349+ via ECC)
 **Location:** `/Volumes/Storage/skillsdump/`
 **GitHub:** `CaptainPhantasy/skillsdump`
 **Includes:** coding-standards, tdd-workflow, security-review, deployment-patterns, api-design, and 340+ more.

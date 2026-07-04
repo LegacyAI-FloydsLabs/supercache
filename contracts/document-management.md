@@ -1,6 +1,6 @@
 # Document Management Contract
-**Version:** 1.7.0
-**Governance:** .supercache/ v1.7.0
+**Version:** 1.7.1
+**Governance:** .supercache/ v1.7.1
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs what documents agents create, where those documents live, how they are named, and how they are maintained over time. It is the authority for document lifecycle and anti-cruft enforcement.
@@ -53,7 +53,6 @@ Every document type has a canonical location. If an agent is creating a document
 | Change log (release notes) | `CHANGELOG.md` at repo root | User-facing release history | Append-only at the top (newest first) |
 | License | `LICENSE` at repo root | Legal | Rarely changes |
 | Governance (FLOYD.md) | project root `FLOYD.md` | Legacy AI canonical per-project spec | Created by `bootstrap.sh --init`; edited as project evolves |
-| Governance (CLAUDE.md) | project root `CLAUDE.md` | Claude-specific adapter (optional) | Created by `bootstrap.sh --add-claude`; edited rarely |
 
 If a document type isn't in the table above, default to **not creating it** unless the user asks.
 
@@ -85,7 +84,6 @@ Every governed project has (at minimum):
 ```
 project/
 ├── FLOYD.md                             # Canonical project spec
-├── CLAUDE.md                            # Optional Claude adapter
 ├── SSOT/
 │   └── <PROJECT_NAME>_SSOT.md           # Project state + verification record
 └── Issues/
@@ -312,7 +310,7 @@ These files are owned by the user and live outside any project repo. They:
 - Capture the **why** behind architectural decisions that aren't fully captured in commit messages
 - Document lessons learned and future work
 
-When creating such a file, structure it so that a future Claude session (or future Douglas) can pick up from it without the session context. Include:
+When creating such a file, structure it so that a future agent session (or future Douglas) can pick up from it without the session context. Include:
 
 - What the session accomplished
 - What decisions were made and why

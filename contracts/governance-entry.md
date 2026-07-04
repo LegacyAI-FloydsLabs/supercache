@@ -1,6 +1,6 @@
 # Governance Entry Contract
-**Version:** 1.7.0
-**Governance:** .supercache/ v1.7.0
+**Version:** 1.7.1
+**Governance:** .supercache/ v1.7.1
 **Type:** Mandatory — read on first entry to any directory
 **Applies to:** All agents, all models, all harnesses
 
@@ -76,17 +76,13 @@ Read `.supercache/templates/floyd-md-template.md`. Create `FLOYD.md` at the proj
 **Fields you mark `<!-- TODO -->`:**
 - Any field you cannot determine from existing files. Do not guess.
 
-### Step 4: Create CLAUDE.md (if Claude Code is used)
-
-Read `.supercache/templates/claude-md-template.md`. Create `CLAUDE.md` at the project root. This is the Claude-specific adapter. Do not duplicate FLOYD.md content.
-
-### Step 5: Create SSOT from Template
+### Step 4: Create SSOT from Template
 
 Read `.supercache/templates/ssot-template.md`. Create `SSOT/{ProjectName}_SSOT.md` by copying the template and filling in the SanDisk1Tb Top-Level Inventory section if this project is on SanDisk1Tb.
 
-### Step 6: Fill Repository Report (MECHANICALLY ENFORCED — NO IMPLEMENTATION UNTIL VERIFIED)
+### Step 5: Fill Repository Report (MECHANICALLY ENFORCED — NO IMPLEMENTATION UNTIL VERIFIED)
 
-**This step is not optional.** If `SSOT/repository_report.json` does not exist or has `_verified: false`, you MUST NOT proceed to any implementation work. This is mechanically enforced by the pi extension `governance-enforcement.ts` (blocks Write/Edit to source files and git commit) and the Claude `repo-report-enforcer.js` Stop hook.
+**This step is not optional.** If `SSOT/repository_report.json` does not exist or has `_verified: false`, you MUST NOT proceed to any implementation work. This is mechanically enforced by the pi extension `governance-enforcement.ts` (blocks Write/Edit to source files and git commit) and repo-report enforcement hooks.
 
 Read `/Volumes/SanDisk1Tb/.supercache/contracts/repository-report-spec.md` completely. Then read `.floyd/repository_report_template.md` for the schema.
 

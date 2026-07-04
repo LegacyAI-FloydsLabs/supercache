@@ -1,6 +1,6 @@
 # Repository Hygiene Contract
-**Version:** 1.7.0
-**Governance:** .supercache/ v1.7.0
+**Version:** 1.7.1
+**Governance:** .supercache/ v1.7.1
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs cleanliness, organization, and what does not belong in a repository. It complements `contracts/repo-structure.md` (which defines where things go) and `contracts/document-management.md` (which defines document lifecycle).
@@ -350,7 +350,7 @@ If a project's root directory has more than ~20 loose files (counting Markdown, 
 - **Manifests**: `package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `Package.swift`, etc.
 - **Lockfiles**: `package-lock.json`, `pnpm-lock.yaml`, `Cargo.lock`, `go.sum`, `Pipfile.lock`, `poetry.lock`, `Package.resolved`
 - **Primary docs**: `README.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
-- **Governance**: `FLOYD.md`, `CLAUDE.md` (optional)
+- **Governance**: `FLOYD.md`
 - **Dotfiles**: `.gitignore`, `.gitattributes`, `.editorconfig`, `.env.example`
 - **CI config**: `.github/` directory (not files directly at root), `.gitlab-ci.yml`, etc.
 - **Build tooling**: `Makefile`, `CMakeLists.txt`, `Dockerfile`, `docker-compose.yml`

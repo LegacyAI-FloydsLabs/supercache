@@ -1,6 +1,6 @@
 # .supercache/ — Legacy AI Governance System
 
-**Version:** 1.7.0
+**Version:** 1.7.1
 **Owner:** Douglas Talley / Legacy AI
 **Repository:** github.com/LegacyAI-FloydsLabs/supercache
 
@@ -12,17 +12,15 @@ You are looking at the governance layer for the entire Legacy AI development env
 
 ## Agent Model
 
-Legacy AI governance recognizes two primary agent runtimes. Every project is spec'd accordingly.
+Legacy AI governance uses one canonical per-project spec.
 
-| Runtime       | Role                                            | Project file(s) it reads                               |
-|---------------|-------------------------------------------------|--------------------------------------------------------|
-| Floyd harness | Workhorse: coding, frontend, bulk generation    | `FLOYD.md` (canonical, always required)                |
+| Runtime | Project file it reads |
+|---------|-----------------------|
+| Floyd-governed harnesses | `FLOYD.md` (canonical, always required) |
 
-Other models (Gemini, Codex, Z.ai, MiniMax, Claude etc.) run through the OhMyFloyd harness and inherit Floyd's contract. They read `FLOYD.md` only.
+Models run through the governed harness and inherit Floyd's contract. They read `FLOYD.md` only.
 
 **`FLOYD.md` is the canonical project spec.** It owns project identity, stack, ports, build commands, environment variables, and project-specific hard rules. Every project must have one. It matches `templates/floyd-md-template.md`.
-
-### File names are loader conventions, not identity labels
 
 ### If you are an AI agent (Floyd or any harness-routed model):
 1. Read `READONLY` — understand you MUST NOT write to this directory
@@ -39,15 +37,14 @@ Other models (Gemini, Codex, Z.ai, MiniMax, Claude etc.) run through the OhMyFlo
 2. To check compliance: `./bootstrap.sh --verify /path/to/project`
 3. To scan all drives: `./bootstrap.sh --health`
 4. To repair a project: `./bootstrap.sh --repair /path/to/project`
-5. To add a Claude adapter to an existing project: `./bootstrap.sh --add-claude /path/to/project`
-6. To archive a project: `./bootstrap.sh --archive /path/to/project`
+5. To archive a project: `./bootstrap.sh --archive /path/to/project`
 
 ### If you are a new team member:
 1. Read this file
 2. Read `manifests/service-catalog.yaml` for what we pay for
 3. Read `manifests/resource-manifest.yaml` for what infrastructure exists
 4. Run `./bootstrap.sh --health` to see the state of all projects
-5. Pick a project, read its `FLOYD.md` (and `CLAUDE.md` if it has one), and start contributing
+5. Pick a project, read its `FLOYD.md`, and start contributing
 
 ---
 
