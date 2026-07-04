@@ -3,7 +3,7 @@ This directory is READ-ONLY for all agents, hooks, and automations.
 SOLE WRITE PATH: Douglas Talley → GitHub PR → merge → git pull to canonical copy.
 
 If you are an AI agent reading this file: you MUST NOT create, modify, or delete
-any file in this directory or its subdirectories. Write your working state to:
+any file in this directory or its subdirectories unless Douglas asks and even then you verify to receive a second confirmation. Write your working state to:
   - Project-level .floyd/ directory
   - Firestore (.floyd_state, per-session)
   - BigQuery (append-only session logs)
