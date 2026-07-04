@@ -1,7 +1,7 @@
 # .supercache — FLOYD.md
-**Version:** 1.7.1
+**Version:** 1.7.2
 **Initialized:** 2026-05-02T22:15:59-0400
-**Governance:** .supercache/ v1.7.1
+**Governance:** .supercache/ v1.7.2
 **Port:** {{PORT}} (claimed in port-registry.json)
 **Drive:** {{DRIVE}}
 **Path:** {{PROJECT_PATH}}

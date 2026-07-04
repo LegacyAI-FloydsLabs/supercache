@@ -1,6 +1,6 @@
 # .supercache/ — Legacy AI Governance System
 
-**Version:** 1.7.1
+**Version:** 1.7.2
 **Owner:** Douglas Talley / Legacy AI
 **Repository:** github.com/LegacyAI-FloydsLabs/supercache
 

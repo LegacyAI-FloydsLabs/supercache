@@ -95,6 +95,8 @@ valid_supercache_path() {
 sync_supercache_path() {
     local target="$1"
     local path="$target/.supercache"
+    local archive
+    local suffix=0
 
     if valid_supercache_path "$target"; then
         ok ".supercache path current"
@@ -108,7 +110,16 @@ sync_supercache_path() {
     fi
 
     warn ".supercache exists but is not a current canonical symlink/copy: $path"
-    warn "Leaving it untouched for manual review/quarantine."
+    archive="$target/.supercache.retired-$(date +%Y%m%d-%H%M%S)"
+    while [[ -e "$archive" || -L "$archive" ]]; do
+        suffix=$((suffix + 1))
+        archive="$target/.supercache.retired-$(date +%Y%m%d-%H%M%S)-$suffix"
+    done
+
+    mv "$path" "$archive"
+    ok "Retired stale .supercache artifact to: $archive"
+    ln -s "$SC_ROOT" "$path"
+    ok "Linked .supercache -> $SC_ROOT"
     return 0
 }
 

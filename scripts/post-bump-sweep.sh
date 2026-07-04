@@ -14,7 +14,7 @@
 # Discovery model: find FLOYD.md across known drives, minus obvious exclusions.
 # A project registry (v1.5.0) will replace find-based discovery.
 #
-# Legacy AI governance — v1.4.0 —
+# Legacy AI governance — v1.7.2 —
 
 set -euo pipefail
 
@@ -28,6 +28,11 @@ SCAN_ROOTS=(
 
 # Match AXIOM governed-root inventory depth unless overridden by env.
 MAX_DEPTH="${MAX_DEPTH:-7}"
+
+# Discovery backend:
+#   auto/find      use pruned find traversal
+#   spotlight      use macOS metadata index
+DISCOVERY_BACKEND="${DISCOVERY_BACKEND:-spotlight}"
 
 # Patterns to exclude from project discovery.
 EXCLUDE_PATTERNS=(
@@ -57,6 +62,24 @@ EXCLUDE_PATTERNS=(
   ".floyd-docs-backup"
   "\\.floyd/agent"                 # agent scaffolds/templates; not real projects
   "\\.omp/skills"                  # embedded skill/tooling package, not project root
+)
+
+# Directory names to prune during find traversal. EXCLUDE_PATTERNS remains the
+# final guard for path-fragment exclusions after discovery.
+PRUNE_DIR_NAMES=(
+  ".git"
+  ".supercache"
+  "node_modules"
+  "reference"
+  "references"
+  "worktrees"
+  "quarantine"
+  "dist"
+  "build"
+  "target"
+  "vendor"
+  "retired"
+  "backup"
 )
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -94,6 +117,7 @@ SC_VERSION="$(cat "$SUPERCACHE_ROOT/VERSION")"
 echo ".supercache/ canonical version: $SC_VERSION"
 echo "Mode: $MODE"
 echo "Max depth: $MAX_DEPTH"
+echo "Discovery backend: $DISCOVERY_BACKEND"
 echo ""
 
 # -------- discovery --------
@@ -106,6 +130,51 @@ should_skip_project() {
   local lower_dir
   lower_dir="$(printf '%s' "$project_dir" | tr '[:upper:]' '[:lower:]')"
   echo "$lower_dir" | grep -qE "$EXCLUDE_REGEX"
+}
+
+discover_floyd_files() {
+  local root="$1"
+  local prune_expr=()
+  local name
+
+  if [[ "$DISCOVERY_BACKEND" == "spotlight" ]]; then
+    if ! command -v mdfind >/dev/null 2>&1; then
+      echo "ERROR: DISCOVERY_BACKEND=spotlight but mdfind is not available" >&2
+      return 1
+    fi
+    mdfind -onlyin "$root" 'kMDItemFSName == "FLOYD.md"' 2>/dev/null
+    return
+  elif [[ "$DISCOVERY_BACKEND" != "auto" && "$DISCOVERY_BACKEND" != "find" ]]; then
+    echo "ERROR: unsupported DISCOVERY_BACKEND: $DISCOVERY_BACKEND" >&2
+    return 2
+  fi
+
+  for name in "${PRUNE_DIR_NAMES[@]}"; do
+    if [[ ${#prune_expr[@]} -gt 0 ]]; then
+      prune_expr+=("-o")
+    fi
+    prune_expr+=("-name" "$name")
+  done
+
+  prune_expr+=(
+    "-o" "-path" "*/docs/source"
+    "-o" "-path" "*/.claude/worktrees"
+    "-o" "-path" "*/.floyd/agent"
+    "-o" "-path" "*/.floyd/supercache-staging"
+    "-o" "-path" "*/.omp/skills"
+    "-o" "-path" "*/omp-harness-storage/tmp"
+    "-o" "-name" "pytest-of-*"
+    "-o" "-name" "pytest-*"
+    "-o" "-name" "supercache.retired-*"
+    "-o" "-name" "floyd-v5-backup-*"
+    "-o" "-name" "floyd_doc_backup_*"
+    "-o" "-name" "backup-storage-*"
+    "-o" "-name" ".floyd-docs-backup"
+  )
+
+  find "$root" -maxdepth "$MAX_DEPTH" \
+    \( "${prune_expr[@]}" \) -prune \
+    -o -name "FLOYD.md" -type f -print 2>/dev/null
 }
 
 PROJECTS=()
@@ -121,7 +190,7 @@ for root in "${SCAN_ROOTS[@]}"; do
       continue
     fi
     PROJECTS+=("$project_dir")
-  done < <(find "$root" -maxdepth "$MAX_DEPTH" -name "FLOYD.md" -type f 2>/dev/null)
+  done < <(discover_floyd_files "$root")
 done
 
 # Deduplicate (bash 3.2-compatible; macOS ships bash 3.2 by default)

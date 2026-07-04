@@ -1,6 +1,6 @@
 # Rules — Mandatory Execution Contract
-**Version:** 1.7.1
-**Governance:** .supercache/ v1.7.1
+**Version:** 1.7.2
+**Governance:** .supercache/ v1.7.2
 **Source:** `/Users/douglastalley/Library/Mobile Documents/com~apple~CloudDocs/Floyd Docs/Run/Rules.md`
 
 # 1. Mandatory Execution Contract

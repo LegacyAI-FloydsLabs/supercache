@@ -1,6 +1,6 @@
 # Repository Hygiene Contract
-**Version:** 1.7.1
-**Governance:** .supercache/ v1.7.1
+**Version:** 1.7.2
+**Governance:** .supercache/ v1.7.2
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs cleanliness, organization, and what does not belong in a repository. It complements `contracts/repo-structure.md` (which defines where things go) and `contracts/document-management.md` (which defines document lifecycle).

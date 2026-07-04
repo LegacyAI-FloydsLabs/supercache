@@ -1,6 +1,6 @@
 # Agent Contract
-**Version:** 1.7.1
-**Governance:** .supercache/ v1.7.1
+**Version:** 1.7.2
+**Governance:** .supercache/ v1.7.2
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs every AI agent operating under Legacy AI governance.

@@ -1,6 +1,6 @@
 # Governance Entry Contract
-**Version:** 1.7.1
-**Governance:** .supercache/ v1.7.1
+**Version:** 1.7.2
+**Governance:** .supercache/ v1.7.2
 **Type:** Mandatory — read on first entry to any directory
 **Applies to:** All agents, all models, all harnesses
 

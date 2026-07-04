@@ -1,6 +1,6 @@
 # Repository Report Specification — Deterministic Field Evidence Rules
-**Version:** 1.7.1
-**Governance:** .supercache/ v1.7.1
+**Version:** 1.7.2
+**Governance:** .supercache/ v1.7.2
 **Type:** Mandatory — referenced by GOVERNANCE-ENTRY.md
 **Applies to:** All agents filling `SSOT/repository_report.json`
 

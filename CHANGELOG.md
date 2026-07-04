@@ -4,6 +4,23 @@ Newest first.
 
 ---
 
+## v1.7.2 — 2026-07-04
+
+Scope: make the governance sweep usable at the default depth on Douglas's mounted project drives, then propagate the repaired governance stamp without restoring Claude-specific agents or special positioning.
+
+### Fixed
+
+- **`scripts/post-bump-sweep.sh`** — defaults discovery to macOS Spotlight so default-depth sweeps do not stall on broad filesystem traversal.
+- **`scripts/post-bump-sweep.sh`** — keeps an explicit `DISCOVERY_BACKEND=find` path with directory pruning for known non-project trees.
+- **`bootstrap.sh --repair`** — retires stale project-local `.supercache` files/directories non-destructively before linking the canonical governance checkout.
+- **Version lockstep** — bumped canonical version-bearing files and the self-governance stamp to `1.7.2`.
+
+### Unchanged
+
+- **Claude-specific agent positioning remains removed** — this release does not restore Claude agent templates, adapter routes, or generated `CLAUDE.md` guidance.
+
+---
+
 ## v1.7.1 — 2026-07-04
 
 Scope: repair the v1.7.x canonical governance repo after partial Claude-adapter removal left broken shell syntax, stale CLI routes, and version drift. This release finishes the removal without restoring Claude-specific agent positioning.
