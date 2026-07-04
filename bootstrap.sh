@@ -10,9 +10,6 @@
 #   bootstrap.sh --verify [dir]                 Compliance check — pass/fail per artifact
 #   bootstrap.sh --doctor [dir]                 Alias for --verify (backward compatibility)
 #   bootstrap.sh --repair [dir]                 Fix missing/outdated artifacts
-#   bootstrap.sh --add-claude [dir]             Add a CLAUDE.md adapter to a project (opt-in)
-#   bootstrap.sh --bulk-init <parent> [flags]   Bulk retrofit --init + --add-claude across a parent dir
-#                                               Flags: --no-claude (skip CLAUDE.md), --dry-run (preview)
 #   bootstrap.sh --bump-version X.Y.Z           Bump .supercache/ version in lockstep across all files
 #   bootstrap.sh --archive [dir]                Graceful project shutdown
 #   bootstrap.sh --health                       Scan all drives for compliance
