@@ -8,10 +8,8 @@
 #   bootstrap.sh --init [dir]                   Initialize governance in a project directory
 #   bootstrap.sh --info [dir]                   Show project orientation (SSOT, issues, agents)
 #   bootstrap.sh --verify [dir]                 Compliance check — pass/fail per artifact
+#   bootstrap.sh --doctor [dir]                 Alias for --verify (backward compatibility)
 #   bootstrap.sh --repair [dir]                 Fix missing/outdated artifacts
-#   bootstrap.sh --add-claude [dir]             Add a CLAUDE.md adapter to a project (opt-in)
-#   bootstrap.sh --bulk-init <parent> [flags]   Bulk retrofit --init + --add-claude across a parent dir
-#                                               Flags: --no-claude (skip CLAUDE.md), --dry-run (preview)
 #   bootstrap.sh --bump-version X.Y.Z           Bump .supercache/ version in lockstep across all files
 #   bootstrap.sh --archive [dir]                Graceful project shutdown
 #   bootstrap.sh --health                       Scan all drives for compliance
@@ -19,7 +17,6 @@
 #
 # Agent model:
 #   FLOYD.md is the canonical project spec. Required for every project.
-#   CLAUDE.md is the Claude-specific adapter. Optional. Opt-in via --add-claude.
 #
 # Environment:
 #   SUPERCACHE_ROOT   Override .supercache/ location (default: auto-detect)
@@ -77,6 +74,207 @@ ok()   { echo -e "${GREEN}[OK]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 fail() { echo -e "${RED}[FAIL]${NC} $1"; }
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+
+valid_supercache_path() {
+    local target="$1"
+    local path="$target/.supercache"
+
+    if [[ -L "$path" ]]; then
+        [[ "$(cd -P "$path" && pwd)" == "$SC_ROOT" ]]
+        return
+    fi
+
+    if [[ -d "$path" && -f "$path/VERSION" ]]; then
+        [[ "$(cat "$path/VERSION")" == "$SC_VERSION" ]]
+        return
+    fi
+
+    return 1
+}
+
+sync_supercache_path() {
+    local target="$1"
+    local path="$target/.supercache"
+    local archive
+    local suffix=0
+
+    if valid_supercache_path "$target"; then
+        ok ".supercache path current"
+        return 0
+    fi
+
+    if [[ ! -e "$path" && ! -L "$path" ]]; then
+        ln -s "$SC_ROOT" "$path"
+        ok "Linked .supercache -> $SC_ROOT"
+        return 0
+    fi
+
+    warn ".supercache exists but is not a current canonical symlink/copy: $path"
+    archive="$target/.supercache.retired-$(date +%Y%m%d-%H%M%S)"
+    while [[ -e "$archive" || -L "$archive" ]]; do
+        suffix=$((suffix + 1))
+        archive="$target/.supercache.retired-$(date +%Y%m%d-%H%M%S)-$suffix"
+    done
+
+    mv "$path" "$archive"
+    ok "Retired stale .supercache artifact to: $archive"
+    ln -s "$SC_ROOT" "$path"
+    ok "Linked .supercache -> $SC_ROOT"
+    return 0
+}
+
+sync_governance_headers() {
+    local target="$1"
+    local -a files=()
+
+    [[ -f "$target/FLOYD.md" ]] && files+=("$target/FLOYD.md")
+
+    local f
+    if [[ -d "$target/SSOT" ]]; then
+        for f in "$target"/SSOT/*.md; do
+            [[ -f "$f" ]] && files+=("$f")
+        done
+    fi
+    if [[ -d "$target/Issues" ]]; then
+        for f in "$target"/Issues/*.md; do
+            [[ -f "$f" ]] && files+=("$f")
+        done
+    fi
+
+    if [[ ${#files[@]} -eq 0 ]]; then
+        warn "No markdown governance headers found to refresh"
+        return 0
+    fi
+
+    python3 - "$SC_VERSION" "${files[@]}" <<'PY'
+import re
+import stat
+import sys
+from pathlib import Path
+
+version = sys.argv[1]
+updated = []
+
+for raw in sys.argv[2:]:
+    path = Path(raw)
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    except OSError:
+        continue
+
+    changed = False
+    has_version = False
+    has_governance = False
+    limit = min(40, len(lines))
+    for idx in range(limit):
+        newline = "\n" if lines[idx].endswith("\n") else ""
+        text = lines[idx].rstrip("\n")
+        if re.match(r"^\*\*Version:\*\*\s*.+$", text):
+            has_version = True
+        next_text = re.sub(r"^\*\*Version:\*\*\s*.+$", f"**Version:** {version}", text)
+        if re.match(r"^\*\*Governance:\*\*\s*\.supercache/\s*v.+$", text):
+            has_governance = True
+        next_text = re.sub(
+            r"^\*\*Governance:\*\*\s*\.supercache/\s*v.+$",
+            f"**Governance:** .supercache/ v{version}",
+            next_text,
+        )
+        if next_text != text:
+            lines[idx] = next_text + newline
+            changed = True
+
+    if path.name in {"FLOYD.md"} and (not has_version or not has_governance):
+        insert_at = 0
+        if lines and lines[0].strip() == "---":
+            for idx in range(1, min(40, len(lines))):
+                if lines[idx].strip() == "---":
+                    insert_at = idx + 1
+                    break
+        elif lines and lines[0].lstrip().startswith("#"):
+            insert_at = 1
+
+        insert = []
+        if insert_at > 0 and lines[insert_at - 1].strip():
+            insert.append("\n")
+        if not has_version:
+            insert.append(f"**Version:** {version}\n")
+        if not has_governance:
+            insert.append(f"**Governance:** .supercache/ v{version}\n")
+        if insert_at < len(lines) and lines[insert_at].strip():
+            insert.append("\n")
+        lines[insert_at:insert_at] = insert
+        changed = True
+
+    if changed:
+        mode = path.stat().st_mode
+        if not (mode & stat.S_IWUSR):
+            path.chmod(mode | stat.S_IWUSR)
+        path.write_text("".join(lines), encoding="utf-8")
+        if path.stat().st_mode != mode:
+            path.chmod(mode)
+        updated.append(str(path))
+
+for item in updated:
+    print(f"header-updated: {item}")
+PY
+}
+
+install_governed_precommit_hook() {
+    local target="$1"
+    local git_dir="$target/.git"
+    local hook_dir="$git_dir/hooks"
+    local hook="$hook_dir/pre-commit"
+
+    if [[ ! -d "$git_dir" ]]; then
+        info "No .git directory — skipping pre-commit hook install"
+        return 0
+    fi
+
+    mkdir -p "$hook_dir"
+
+    if [[ -e "$hook" || -L "$hook" ]]; then
+        if ! grep -q "Installed by .supercache/bootstrap.sh repair." "$hook" 2>/dev/null; then
+            info "pre-commit hook already exists — leaving unchanged"
+            return 0
+        fi
+    fi
+
+    cat > "$hook" <<'HOOK'
+#!/usr/bin/env bash
+# Legacy AI governed pre-commit hook.
+# Installed by .supercache/bootstrap.sh repair.
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$REPO_ROOT"
+
+if [[ -x "$REPO_ROOT/.supercache/hooks/pre-commit.sh" ]]; then
+    "$REPO_ROOT/.supercache/hooks/pre-commit.sh"
+fi
+
+if [[ -x "$HOME/.local/share/legacy-ai/hooks/pre-commit-secret-scan.sh" ]]; then
+    "$HOME/.local/share/legacy-ai/hooks/pre-commit-secret-scan.sh"
+fi
+
+if [[ -x "$REPO_ROOT/scripts/secret-scan.sh" ]]; then
+    "$REPO_ROOT/scripts/secret-scan.sh" --staged
+fi
+
+while IFS= read -r nested_secret_scan; do
+    [[ "$nested_secret_scan" == "$REPO_ROOT/scripts/secret-scan.sh" ]] && continue
+    [[ -x "$nested_secret_scan" ]] || continue
+    "$nested_secret_scan" --staged
+done < <(
+    find "$REPO_ROOT" \
+        -path '*/.git/*' -prune -o \
+        -path '*/node_modules/*' -prune -o \
+        -path '*/.supercache/*' -prune -o \
+        -path '*/scripts/secret-scan.sh' -type f -perm -u+x -print 2>/dev/null
+)
+HOOK
+    chmod +x "$hook"
+    ok "Installed/updated governed pre-commit hook"
+}
 
 # --- Commands ---
 
@@ -137,6 +335,24 @@ cmd_init() {
         ok "Created .floyd/agent_log.jsonl"
     fi
 
+    # Repository report template — agents must fill this via code review at bootstrap
+    local report_file="$target/.floyd/repository_report_template.md"
+    if [[ ! -f "$report_file" ]]; then
+        cp "$TEMPLATES/repository-report-template.md" "$report_file"
+        ok "Created .floyd/repository_report_template.md"
+    else
+        warn ".floyd/repository_report_template.md already exists — skipping"
+    fi
+
+    # Rules contract — mandatory reading at every session
+    local rules_file="$target/.floyd/rules.md"
+    if [[ ! -f "$rules_file" ]]; then
+        cp "$CONTRACTS/rules.md" "$rules_file"
+        ok "Created .floyd/rules.md"
+    else
+        warn ".floyd/rules.md already exists — skipping"
+    fi
+
     # Version stamp
     echo "$SC_VERSION" > "$target/.floyd/.supercache_version"
     ok "Stamped .supercache/ version: $SC_VERSION"
@@ -164,13 +380,6 @@ cmd_info() {
         fail "FLOYD.md missing"
     fi
 
-    # CLAUDE.md (adapter, optional)
-    if [[ -f "$target/CLAUDE.md" ]]; then
-        ok "CLAUDE.md present ($(wc -l < "$target/CLAUDE.md") lines) [Claude adapter]"
-    else
-        info "CLAUDE.md not present (optional — run --add-claude to add)"
-    fi
-
     # SSOT
     if [[ -d "$target/SSOT" ]]; then
         local ssot_count
@@ -196,6 +405,20 @@ cmd_info() {
         ok "Agent log present ($log_lines entries)"
     else
         warn "No agent log found"
+    fi
+
+    # Repository report template
+    if [[ -f "$target/.floyd/repository_report_template.md" ]]; then
+        ok "Repository report template present"
+    else
+        info "Repository report template not present — run --repair to deploy"
+    fi
+
+    # Rules contract
+    if [[ -f "$target/.floyd/rules.md" ]]; then
+        ok "Rules contract present"
+    else
+        info "Rules contract not present — run --repair to deploy"
     fi
 
     # Version check
@@ -246,26 +469,16 @@ cmd_verify() {
     check ".floyd/ directory exists" "[[ -d '$target/.floyd' ]]"
     check "Agent log exists" "[[ -f '$target/.floyd/agent_log.jsonl' ]]"
     check "Version stamp exists" "[[ -f '$target/.floyd/.supercache_version' ]]"
+    check "Repository report template deployed" "[[ -f '$target/.floyd/repository_report_template.md' ]]"
+    check "Rules contract deployed" "[[ -f '$target/.floyd/rules.md' ]]"
+    check ".supercache path resolves to current governance" "valid_supercache_path '$target'"
+    check "FLOYD.md governance header current" "grep -q '^\\*\\*Governance:\\*\\* \\.supercache/ v$SC_VERSION$' '$target/FLOYD.md'"
+
 
     if [[ -f "$target/.floyd/.supercache_version" ]]; then
         local proj_ver
         proj_ver="$(cat "$target/.floyd/.supercache_version")"
         check "Version current ($proj_ver == $SC_VERSION)" "[[ '$proj_ver' == '$SC_VERSION' ]]"
-    fi
-
-    # CLAUDE.md is optional. If present, verify it has the expected adapter structure.
-    if [[ -f "$target/CLAUDE.md" ]]; then
-        info "CLAUDE.md present — verifying adapter structure"
-        check "CLAUDE.md references FLOYD.md as canonical" \
-            "grep -q 'Canonical spec' '$target/CLAUDE.md' || grep -q 'FLOYD.md' '$target/CLAUDE.md'"
-        check "CLAUDE.md has 'Agent Role on This Project' section" \
-            "grep -q '## Agent Role on This Project' '$target/CLAUDE.md'"
-        check "CLAUDE.md has 'Division of Labor' section" \
-            "grep -q '## Division of Labor' '$target/CLAUDE.md'"
-        check "CLAUDE.md references execution contract" \
-            "grep -q 'execution-contract' '$target/CLAUDE.md'"
-    else
-        info "CLAUDE.md not present (optional — skipping adapter checks)"
     fi
 
     echo ""
@@ -290,57 +503,25 @@ cmd_repair() {
     # Update version stamp
     echo "$SC_VERSION" > "$target/.floyd/.supercache_version"
     ok "Version stamp updated to $SC_VERSION"
-}
 
-cmd_add_claude() {
-    local target="${1:-.}"
-    target="$(cd "$target" && pwd)"
-    local project_name="$(basename "$target")"
-
-    info "Adding Claude adapter to: $target"
-    info "Using .supercache/ v${SC_VERSION} at: $SC_ROOT"
-
-    # Project must already be governed
-    if [[ ! -f "$target/FLOYD.md" ]]; then
-        fail "FLOYD.md missing — run --init first. CLAUDE.md is an adapter, not a replacement."
-        exit 1
-    fi
-
-    if [[ ! -f "$TEMPLATES/claude-md-template.md" ]]; then
-        fail "Template missing: $TEMPLATES/claude-md-template.md"
-        exit 1
-    fi
-
-    # CLAUDE.md — only if it doesn't exist
-    if [[ ! -f "$target/CLAUDE.md" ]]; then
-        sed "s/{{PROJECT_NAME}}/$project_name/g; s/{{VERSION}}/$SC_VERSION/g; s|{{SUPERCACHE_PATH}}|$SC_ROOT|g; s/{{DATE}}/$(date +%Y-%m-%dT%H:%M:%S%z)/g" \
-            "$TEMPLATES/claude-md-template.md" > "$target/CLAUDE.md"
-        ok "Created CLAUDE.md"
-    else
-        warn "CLAUDE.md already exists — skipping (will not overwrite project-specific content)"
-    fi
-
-    echo ""
-    ok "Claude adapter added for '$project_name'"
-    info "Edit $target/CLAUDE.md to fill in project-specific role and rules."
-    info "Run 'bootstrap.sh --verify $target' to confirm compliance."
+    sync_supercache_path "$target"
+    sync_governance_headers "$target"
+    install_governed_precommit_hook "$target"
 }
 
 cmd_bulk_init() {
     local parent="${1:-}"
-    local with_claude="${2:-}"
-    local dry_run="${3:-}"
+    if [[ $# -gt 0 ]]; then
+        shift
+    fi
 
     if [[ -z "$parent" ]]; then
-        fail "Usage: bootstrap.sh --bulk-init <parent-dir> [--no-claude] [--dry-run]"
+        fail "Usage: bootstrap.sh --bulk-init <parent-dir> [--dry-run]"
         fail "Example: bootstrap.sh --bulk-init /Volumes/Storage/Development"
         fail ""
         fail "Walks the parent directory and runs --init on every directory that looks"
         fail "like a project (has a recognizable manifest file like package.json, Cargo.toml,"
         fail "pyproject.toml, go.mod, Package.swift, etc.) and lacks FLOYD.md."
-        fail ""
-        fail "By default, also creates CLAUDE.md via --add-claude logic. Pass --no-claude"
-        fail "to skip CLAUDE.md creation."
         fail ""
         fail "Use --dry-run to preview the target list without creating any files."
         exit 1
@@ -353,18 +534,16 @@ cmd_bulk_init() {
 
     parent="$(cd "$parent" && pwd)"
 
-    local add_claude_default="yes"
     local is_dry_run="no"
-    for arg in "$with_claude" "$dry_run"; do
+    for arg in "$@"; do
         case "$arg" in
-            --no-claude) add_claude_default="no" ;;
             --dry-run)   is_dry_run="yes" ;;
+            *)           fail "Unknown --bulk-init flag: $arg"; exit 2 ;;
         esac
     done
 
     info "Bulk-init scanning: $parent"
     info "Mode: $([ "$is_dry_run" = "yes" ] && echo "DRY RUN (preview only)" || echo "EXECUTE")"
-    info "CLAUDE.md: $([ "$add_claude_default" = "yes" ] && echo "create" || echo "skip")"
     echo ""
 
     local -a skipped_existing=()
@@ -465,13 +644,6 @@ cmd_bulk_init() {
         info "Initializing: $n"
         if cmd_init "$d" > /dev/null 2>&1; then
             ok "  FLOYD.md + SSOT + Issues + .floyd created"
-            if [[ "$add_claude_default" = "yes" ]]; then
-                if cmd_add_claude "$d" > /dev/null 2>&1; then
-                    ok "  CLAUDE.md created"
-                else
-                    warn "  CLAUDE.md creation failed (continuing)"
-                fi
-            fi
             success_count=$((success_count + 1))
         else
             fail "  init failed for $n (continuing with remaining projects)"
@@ -528,14 +700,25 @@ cmd_bump_version() {
     fi
 
     # Files that must all carry the version string in lockstep
-    local files=(
+    # ALL contracts/ files with **Version:** headers must be bumped together.
+    local version_files=(
         "$SC_ROOT/VERSION"
+        "$SC_ROOT/.floyd/.supercache_version"
+        "$SC_ROOT/FLOYD.md"
         "$SC_ROOT/README.md"
         "$SC_ROOT/contracts/agent-contract.md"
         "$SC_ROOT/contracts/execution-contract.md"
+        "$SC_ROOT/contracts/governance-entry.md"
+        "$SC_ROOT/contracts/document-management.md"
+        "$SC_ROOT/contracts/git-discipline.md"
+        "$SC_ROOT/contracts/repo-hygiene.md"
+        "$SC_ROOT/contracts/repo-sanitation.md"
+        "$SC_ROOT/contracts/repo-structure.md"
+        "$SC_ROOT/contracts/repository-report-spec.md"
+        "$SC_ROOT/contracts/rules.md"
     )
 
-    for f in "${files[@]}"; do
+    for f in "${version_files[@]}"; do
         if [[ ! -f "$f" ]]; then
             fail "Expected file missing: $f"
             exit 1
@@ -545,33 +728,31 @@ cmd_bump_version() {
     # VERSION file
     if [[ "$dry_run" != "--dry-run" ]]; then
         echo "$new_ver" > "$SC_ROOT/VERSION"
+        echo "$new_ver" > "$SC_ROOT/.floyd/.supercache_version"
     fi
     ok "VERSION: $old_ver → $new_ver"
+    ok ".floyd/.supercache_version: $old_ver → $new_ver"
 
-    # README.md
-    if [[ "$dry_run" != "--dry-run" ]]; then
-        sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$SC_ROOT/README.md"
-    fi
-    ok "README.md: **Version:** $new_ver"
+    # All markdown files: bump **Version:** and **Governance:** strings
+    local md_files=()
+    for f in "${version_files[@]}"; do
+        [[ "$f" == *.md ]] && md_files+=("$f")
+    done
 
-    # agent-contract.md (Version line AND Governance line)
-    if [[ "$dry_run" != "--dry-run" ]]; then
-        sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$SC_ROOT/contracts/agent-contract.md"
-        sed -i '' "s|\*\*Governance:\*\* \.supercache/ v$old_ver|\*\*Governance:\*\* .supercache/ v$new_ver|" "$SC_ROOT/contracts/agent-contract.md"
-    fi
-    ok "contracts/agent-contract.md: Version + Governance → $new_ver"
-
-    # execution-contract.md
-    if [[ "$dry_run" != "--dry-run" ]]; then
-        sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$SC_ROOT/contracts/execution-contract.md"
-    fi
-    ok "contracts/execution-contract.md: **Version:** $new_ver"
+    for f in "${md_files[@]}"; do
+        local basename="$(basename "$f")"
+        if [[ "$dry_run" != "--dry-run" ]]; then
+            sed -i '' "s/\*\*Version:\*\* $old_ver/\*\*Version:\*\* $new_ver/" "$f"
+            sed -i '' "s|\*\*Governance:\*\* \.supercache/ v$old_ver|\*\*Governance:\*\* .supercache/ v$new_ver|" "$f"
+        fi
+        ok "$basename: Version + Governance → $new_ver"
+    done
 
     echo ""
     if [[ "$dry_run" == "--dry-run" ]]; then
         info "Dry run complete. No files modified. Re-run without --dry-run to apply."
     else
-        ok "Version bumped in lockstep across 4 files: $old_ver → $new_ver"
+        ok "Version bumped in lockstep across ${#version_files[@]} files: $old_ver → $new_ver"
         info "Review the diff:  git -C $SC_ROOT diff"
         info "Commit manually with a message like:  'chore: bump version to $new_ver'"
     fi
@@ -664,10 +845,9 @@ cmd_health() {
 case "${1:-}" in
     --init)         cmd_init "${2:-.}" ;;
     --info)         cmd_info "${2:-.}" ;;
-    --verify)       cmd_verify "${2:-.}" ;;
+    --verify|--doctor) cmd_verify "${2:-.}" ;;
     --repair)       cmd_repair "${2:-.}" ;;
-    --add-claude)   cmd_add_claude "${2:-.}" ;;
-    --bulk-init)    cmd_bulk_init "${2:-}" "${3:-}" "${4:-}" ;;
+    --bulk-init)    shift; cmd_bulk_init "$@" ;;
     --bump-version) cmd_bump_version "${2:-}" "${3:-}" ;;
     --archive)      cmd_archive "${2:-.}" ;;
     --health)       cmd_health ;;
@@ -681,10 +861,10 @@ case "${1:-}" in
         echo "  --init [dir]                  Initialize governance in a project directory"
         echo "  --info [dir]                  Show project orientation"
         echo "  --verify [dir]                Compliance check (pass/fail)"
+        echo "  --doctor [dir]                Alias for --verify"
         echo "  --repair [dir]                Fix missing/outdated artifacts"
-        echo "  --add-claude [dir]            Add a CLAUDE.md adapter to a project (opt-in)"
-        echo "  --bulk-init <parent> [flags]  Retrofit --init + --add-claude across every project under a parent dir"
-        echo "                                Flags: --no-claude, --dry-run"
+        echo "  --bulk-init <parent> [flags]  Retrofit --init across every project under a parent dir"
+        echo "                                Flags: --dry-run"
         echo "  --archive [dir]               Mark project for archival"
         echo ""
         echo "Governance commands:"
@@ -694,7 +874,6 @@ case "${1:-}" in
         echo ""
         echo "Agent model:"
         echo "  FLOYD.md is required (canonical project spec)."
-        echo "  CLAUDE.md is optional (Claude-specific adapter). Add with --add-claude."
         exit 1
         ;;
 esac

@@ -1,7 +1,7 @@
-# {{PROJECT_NAME}} — FLOYD.md
-**Version:** {{VERSION}}
-**Initialized:** {{DATE}}
-**Governance:** .supercache/ v{{VERSION}}
+# .supercache — FLOYD.md
+**Version:** 1.7.2
+**Initialized:** 2026-05-02T22:15:59-0400
+**Governance:** .supercache/ v1.7.2
 **Port:** {{PORT}} (claimed in port-registry.json)
 **Drive:** {{DRIVE}}
 **Path:** {{PROJECT_PATH}}
@@ -16,15 +16,15 @@
 
 ## Agent Contract
 
-You are working on **{{PROJECT_NAME}}**, a Legacy AI project.
+You are working on **.supercache**, a Legacy AI project.
 
 **This file (`FLOYD.md`) is the canonical project spec.** It is authoritative for project identity, stack, ports, build commands, environment variables, and project-specific rules. All governed agents read this file first.
 
 ### Before You Start
 1. Read this file completely. Do not skim. Every section constrains your behavior.
 2. Read `.supercache/READONLY` — you MUST NOT write to `.supercache/`.
-3. Read `SSOT/{{PROJECT_NAME}}_SSOT.md` for current project state. Perform the Verification Sweep Protocol defined in `.supercache/contracts/document-management.md` for sections relevant to your task.
-4. Read `Issues/{{PROJECT_NAME}}_ISSUES.md` for open issues and blockers.
+3. Read `SSOT/.supercache_SSOT.md` for current project state. Perform the Verification Sweep Protocol defined in `.supercache/contracts/document-management.md` for sections relevant to your task.
+4. Read `Issues/.supercache_ISSUES.md` for open issues and blockers.
 5. Read `.supercache/manifests/port-allocation-policy.yaml` — NEVER use port 3000, 5000, 8000, 8080, or any other forbidden port. This project uses port **{{PORT}}**. Do not change it without Douglas Talley's explicit approval.
 6. Read `.supercache/contracts/execution-contract.md` — this governs how you prove your work.
 7. Read `.supercache/contracts/repo-structure.md` — canonical layout for this project's language, plus the migration workflow if structural changes are needed.
@@ -35,7 +35,7 @@ You are working on **{{PROJECT_NAME}}**, a Legacy AI project.
 
 ### Governance Location
 ```
-.supercache/ → {{SUPERCACHE_PATH}}
+.supercache/ → /Volumes/SanDisk1Tb/.supercache
 ```
 This directory contains global templates, contracts, manifests, and routing config.
 It is **READ-ONLY**. Do not create, modify, or delete any file there.
@@ -44,8 +44,8 @@ It is **READ-ONLY**. Do not create, modify, or delete any file there.
 
 | Location             | Purpose                                          | Example                                         |
 |----------------------|--------------------------------------------------|-------------------------------------------------|
-| `SSOT/`              | Project status, decisions, findings, verification | `SSOT/{{PROJECT_NAME}}_SSOT.md`, `SSOT/decision-log.md` |
-| `Issues/`            | Bugs, blockers, tasks, help-desk ledger          | `Issues/{{PROJECT_NAME}}_ISSUES.md`, `Issues/0001-description.md` |
+| `SSOT/`              | Project status, decisions, findings, verification | `SSOT/.supercache_SSOT.md`, `SSOT/decision-log.md` |
+| `Issues/`            | Bugs, blockers, tasks, help-desk ledger          | `Issues/.supercache_ISSUES.md`, `Issues/0001-description.md` |
 | `.floyd/`            | Agent working state, session logs, runtime cache | `.floyd/agent_log.jsonl`                        |
 | Project source files | Your actual work                                 | Any file in the project tree not listed below   |
 
@@ -62,7 +62,7 @@ It is **READ-ONLY**. Do not create, modify, or delete any file there.
 
 | Field                | Value                                                                   |
 |----------------------|-------------------------------------------------------------------------|
-| **Name**             | {{PROJECT_NAME}}                                                        |
+| **Name**             | .supercache                                                        |
 | **Purpose**          | <!-- One sentence. What this project does and why it exists. -->        |
 | **Primary Language** | <!-- e.g. TypeScript (ES2022, strict), Python 3.12, Go 1.23 -->         |
 | **Runtime**          | <!-- e.g. Node.js ≥ 22.0.0, Python 3.12+, N/A for CLI -->               |
@@ -82,7 +82,7 @@ It is **READ-ONLY**. Do not create, modify, or delete any file there.
 <!-- Do not list node_modules, .git, or build cache directories. -->
 
 ```
-{{PROJECT_NAME}}/
+.supercache/
 ├── src/                          # Source code root
 │   └── index.ts                  # Entry point
 ├── tests/                        # Test files

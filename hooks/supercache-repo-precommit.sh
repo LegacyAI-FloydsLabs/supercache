@@ -4,6 +4,8 @@
 # Pre-commit hook for the .supercache/ governance repo itself.
 # Blocks commits that introduce version drift across the version-bearing files:
 #   - VERSION
+#   - .floyd/.supercache_version
+#   - FLOYD.md                              (**Version:** X.Y.Z, **Governance:** .supercache/ vX.Y.Z)
 #   - README.md                             (**Version:** X.Y.Z)
 #   - contracts/agent-contract.md           (**Version:** X.Y.Z, **Governance:** .supercache/ vX.Y.Z)
 #   - contracts/execution-contract.md       (**Version:** X.Y.Z)
@@ -46,6 +48,23 @@ fi
 
 mismatches=()
 
+check_exact_version_file() {
+    local file="$1"
+    local label="$2"
+    local path="$REPO_ROOT/$file"
+
+    if [[ ! -f "$path" ]]; then
+        echo "[supercache-precommit] WARN: expected file missing: $file" >&2
+        return
+    fi
+
+    local found
+    found="$(tr -d '[:space:]' < "$path")"
+    if [[ "$found" != "$CANONICAL_VER" ]]; then
+        mismatches+=("$label ($file): $found ≠ $CANONICAL_VER")
+    fi
+}
+
 check_file_version() {
     local file="$1"
     local pattern="$2"
@@ -70,10 +89,29 @@ check_file_version() {
     fi
 }
 
-check_file_version "README.md"                       '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "README.md"
-check_file_version "contracts/agent-contract.md"     '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "agent-contract.md (Version)"
-check_file_version "contracts/agent-contract.md"     '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "agent-contract.md (Governance)"
-check_file_version "contracts/execution-contract.md" '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "execution-contract.md"
+check_exact_version_file ".floyd/.supercache_version"        ".floyd/.supercache_version"
+check_file_version "FLOYD.md"                               '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "FLOYD.md (Version)"
+check_file_version "FLOYD.md"                               '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "FLOYD.md (Governance)"
+check_file_version "README.md"                          '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "README.md"
+check_file_version "contracts/agent-contract.md"          '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "agent-contract.md (Version)"
+check_file_version "contracts/agent-contract.md"          '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "agent-contract.md (Governance)"
+check_file_version "contracts/execution-contract.md"      '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "execution-contract.md"
+check_file_version "contracts/governance-entry.md"        '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "governance-entry.md (Version)"
+check_file_version "contracts/governance-entry.md"        '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "governance-entry.md (Governance)"
+check_file_version "contracts/document-management.md"     '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "document-management.md (Version)"
+check_file_version "contracts/document-management.md"     '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "document-management.md (Governance)"
+check_file_version "contracts/git-discipline.md"          '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "git-discipline.md (Version)"
+check_file_version "contracts/git-discipline.md"          '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "git-discipline.md (Governance)"
+check_file_version "contracts/repo-hygiene.md"            '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "repo-hygiene.md (Version)"
+check_file_version "contracts/repo-hygiene.md"            '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "repo-hygiene.md (Governance)"
+check_file_version "contracts/repo-sanitation.md"         '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "repo-sanitation.md (Version)"
+check_file_version "contracts/repo-sanitation.md"         '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "repo-sanitation.md (Governance)"
+check_file_version "contracts/repo-structure.md"          '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "repo-structure.md (Version)"
+check_file_version "contracts/repo-structure.md"          '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "repo-structure.md (Governance)"
+check_file_version "contracts/repository-report-spec.md"  '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "repository-report-spec.md (Version)"
+check_file_version "contracts/repository-report-spec.md"  '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "repository-report-spec.md (Governance)"
+check_file_version "contracts/rules.md"                   '\*\*Version:\*\* [0-9]+\.[0-9]+\.[0-9]+'                    "rules.md (Version)"
+check_file_version "contracts/rules.md"                   '\*\*Governance:\*\* \.supercache/ v[0-9]+\.[0-9]+\.[0-9]+'  "rules.md (Governance)"
 
 if [[ ${#mismatches[@]} -gt 0 ]]; then
     echo "" >&2
@@ -87,6 +125,29 @@ if [[ ${#mismatches[@]} -gt 0 ]]; then
     echo "" >&2
     echo "[supercache-precommit] Fix:  ./bootstrap.sh --bump-version $CANONICAL_VER" >&2
     echo "[supercache-precommit] Or edit the drifted files by hand to match the canonical version." >&2
+    echo "" >&2
+    exit 1
+fi
+
+bash_failures=()
+while IFS= read -r script; do
+    if ! bash -n "$script"; then
+        bash_failures+=("${script#$REPO_ROOT/}")
+    fi
+done < <(
+    find "$REPO_ROOT" \
+        -path "$REPO_ROOT/.git" -prune -o \
+        \( -name '*.sh' -o -path "$REPO_ROOT/hooks/*" -type f -perm -u+x -o -path "$REPO_ROOT/scripts/*" -type f -perm -u+x \) \
+        -type f -print
+)
+
+if [[ ${#bash_failures[@]} -gt 0 ]]; then
+    echo "" >&2
+    echo "[supercache-precommit] BLOCKED: shell syntax check failed" >&2
+    echo "" >&2
+    for f in "${bash_failures[@]}"; do
+        echo "  - $f" >&2
+    done
     echo "" >&2
     exit 1
 fi

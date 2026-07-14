@@ -1,6 +1,6 @@
 # Git Discipline Contract
-**Version:** 1.3.0
-**Governance:** .supercache/ v1.3.0
+**Version:** 1.7.2
+**Governance:** .supercache/ v1.7.2
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs how agents interact with git, GitHub, and related version-control operations on behalf of Legacy AI. It combines Git best practices with strict IP protection and brand reputation safeguarding.
@@ -259,7 +259,7 @@ The Git Discipline contract works in concert with the External Identity Rule in 
 
 - **Public code comments**: treated as customer-facing. Refer to the system as "Floyd" where relevant. Never mention the underlying model or harness.
 - **README and docs**: customer-facing. Same rule.
-- **Commit messages**: Douglas's name appears as author; co-author trailer may mention "Claude Opus 4.6" when appropriate for attribution inside Legacy AI, but **commit bodies intended for public view should not name internal implementation details**.
+- **Commit messages**: Douglas's name appears as author; co-author trailer may mention the internal AI runtime when appropriate for attribution inside Legacy AI, but **commit bodies intended for public view should not name internal implementation details**.
 - **Issue/PR descriptions**: customer-facing. Write as if a customer will read them.
 - **GitHub Actions logs**: potentially customer-visible. Do not log secrets or internal paths.
 
@@ -297,20 +297,20 @@ The Git Discipline contract works in concert with the External Identity Rule in 
 
 ## Co-Authorship Attribution
 
-When Claude or another AI assists in a commit, the following trailer format is acceptable:
+When an AI assists in a commit, the following trailer format is acceptable:
 
 ```
-Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>
+Co-Authored-By: AI Assistant <noreply@legacy-ai.local>
 ```
 
-**When to include**: commits where Claude contributed significant code, design, or prose.
+**When to include**: commits where an AI contributed significant code, design, or prose.
 
 **When to omit**:
 - Commits that are customer-facing deliverables (see External Identity Rule)
 - Commits where the AI contribution was trivial (single-line fixes)
 - When Douglas specifies no-attribution mode
 
-**Never falsify**: do not attribute work to Claude that Claude did not do, and do not attribute Claude work to a human.
+**Never falsify**: do not attribute AI work to a human, and do not attribute human work to an AI.
 
 ---
 

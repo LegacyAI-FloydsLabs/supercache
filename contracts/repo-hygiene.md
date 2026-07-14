@@ -1,11 +1,13 @@
 # Repository Hygiene Contract
-**Version:** 1.3.0
-**Governance:** .supercache/ v1.3.0
+**Version:** 1.7.2
+**Governance:** .supercache/ v1.7.2
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs cleanliness, organization, and what does not belong in a repository. It complements `contracts/repo-structure.md` (which defines where things go) and `contracts/document-management.md` (which defines document lifecycle).
 
 It is READ-ONLY. The sole write path: Douglas Talley → GitHub PR → merge → git pull.
+
+> **v1.6.0 supersession notice.** All removal flows in this contract route through `contracts/repo-sanitation.md`. The previous "Safety Protocol Before Deleting Anything", "User Override" (deletion-autonomy clause), and the "Default policy: delete" for dead code are **superseded by `repo-sanitation.md` §6.2 and §6.3**. Agents do not delete code or files — they quarantine to `<project>/.floyd/quarantine/<YYYY-MM-DD>/<original-relative-path>` with a `WHY.md` companion and a `LEDGER.jsonl` append. Only Douglas empties quarantine.
 
 ---
 
@@ -15,7 +17,7 @@ It is READ-ONLY. The sole write path: Douglas Talley → GitHub PR → merge →
 
 Every agent task should end with the repository in a state at least as tidy as when it started. Preferably tidier. Mess accumulates if nobody is responsible for cleanup; this contract makes cleanup an explicit expectation for every agent on every task.
 
-The enforcement posture in v1.3.0 is advisory — agents are asked to apply these rules proactively but not gated by pre-commit checks. v1.4.0 will add hard enforcement via `bootstrap.sh --verify-hygiene` and optional pre-commit hooks.
+The enforcement posture in v1.6.0 remains advisory at the contract level — agents apply these rules proactively. Hard mechanical enforcement (PreToolUse hook + `floyd-quarantine` helper) ships in v1.6.1.
 
 ---
 
@@ -289,9 +291,9 @@ The following categories of files MUST NEVER be committed:
 
 ---
 
-## Cleanup Triggers (Flag on Sight)
+## Cleanup Triggers (Flag and Quarantine on Sight)
 
-When an agent encounters any of the following, it is a cleanup signal. Do NOT auto-delete — flag the finding, check with the user, then act.
+When an agent encounters any of the following, it is a cleanup signal. **The disposition is always quarantine per `repo-sanitation.md §3`** — agents do not auto-delete and do not delete after asking.
 
 ### Duplicate directories
 
@@ -299,7 +301,7 @@ When an agent encounters any of the following, it is a cleanup signal. Do NOT au
 - `project/`, `project-old/`, `project-new/`, `project-v2/`, `project-backup/` — indicates uncertain refactor history
 - `module/`, `module2/`, `module_new/`, `module_final/`, `module_final_2/` — same story, worse
 
-**Protocol**: investigate which is canonical, archive or delete the others, update references.
+**Protocol**: investigate which is canonical. Quarantine the others per `repo-sanitation.md §3` with `reason_category: duplicate`. Update references in active code to point to the canonical copy. Open an Issue documenting the choice.
 
 ### Empty placeholders
 
@@ -307,24 +309,24 @@ When an agent encounters any of the following, it is a cleanup signal. Do NOT au
 - Empty `plans/`, `notes/`, `state/`, `locks/` dirs at project root
 - Directories with only a `.DS_Store` or `.gitkeep`
 
-**Protocol**: delete if truly empty and purposeless. If a `.gitkeep` exists, check whether the empty directory is intentional (some build tools need empty dirs).
+**Protocol**: quarantine the directory if truly empty and purposeless (`reason_category: stale`). If a `.gitkeep` exists, check whether the empty directory is intentional (some build tools need empty dirs); if intentional, leave alone.
 
 ### Stale root-level junk
 
-- `TODO.md`, `NOTES.md`, `SCRATCH.md` at project root (should be moved or deleted per `contracts/document-management.md`)
+- `TODO.md`, `NOTES.md`, `SCRATCH.md` at project root (should be moved or quarantined per `contracts/document-management.md`)
 - Orphaned `node_modules/` NOT inside a project (e.g., at drive root or wrong directory)
 - Random loose scripts (`test_something.py`, `quick_fix.sh`) at repo root that belong in `scripts/` or `tests/`
 - `.env.example.old`, `config.json.bak`, `settings.backup` — stale configs
 
-**Protocol**: ask "does this belong somewhere structured?", move it if yes, flag for deletion if no.
+**Protocol**: ask "does this belong somewhere structured?", move it if yes, quarantine per `repo-sanitation.md §3` if no (`reason_category: cleanup-trigger`).
 
 ### Committed secrets or backup files in git history
 
 - `*.bak`, `*.swp`, `*.tmp` that made it into a commit
-- `.env` that was committed (needs history rewrite to fully remove — flag as a security issue, not a cleanup item)
+- `.env` that was committed (needs history rewrite to fully remove — escalate as a security issue)
 - Accidentally-committed credentials files
 
-**Protocol**: if found in current commit, remove and add to `.gitignore`. If found in history, escalate to the user as a security issue — history rewrite may be needed, credentials may need rotation.
+**Protocol**: if found in current commit, quarantine and add to `.gitignore`. If found in history, **escalate to Douglas** as a security issue per `repo-sanitation.md §8.1` — history rewrite may be needed, credentials may need rotation. Quarantine alone does NOT remove a secret from git history; escalation is mandatory.
 
 ### Dead code
 
@@ -333,7 +335,7 @@ When an agent encounters any of the following, it is a cleanup signal. Do NOT au
 - `DEPRECATED` comments with no removal plan
 - `XXX`, `FIXME`, `HACK` comments older than 6 months with no associated issue
 
-**Protocol**: for small projects, delete with a clear commit message. For larger projects, confirm with the user first — there may be reasons.
+**Protocol**: extract per `repo-sanitation.md §6.3` — quarantine the snippet to `.floyd/quarantine/<date>/dead-code/<original-file>__<line-range>.snippet` with WHY.md, then remove the comment from the active source file. Open an Issue to document the choice.
 
 ---
 
@@ -348,7 +350,7 @@ If a project's root directory has more than ~20 loose files (counting Markdown, 
 - **Manifests**: `package.json`, `Cargo.toml`, `go.mod`, `pyproject.toml`, `Package.swift`, etc.
 - **Lockfiles**: `package-lock.json`, `pnpm-lock.yaml`, `Cargo.lock`, `go.sum`, `Pipfile.lock`, `poetry.lock`, `Package.resolved`
 - **Primary docs**: `README.md`, `LICENSE`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
-- **Governance**: `FLOYD.md`, `CLAUDE.md` (optional)
+- **Governance**: `FLOYD.md`
 - **Dotfiles**: `.gitignore`, `.gitattributes`, `.editorconfig`, `.env.example`
 - **CI config**: `.github/` directory (not files directly at root), `.gitlab-ci.yml`, etc.
 - **Build tooling**: `Makefile`, `CMakeLists.txt`, `Dockerfile`, `docker-compose.yml`
@@ -407,55 +409,51 @@ These are guidelines, not hard rules. They flag candidates for refactoring.
 
 ---
 
-## Safety Protocol Before Deleting Anything
+## Quarantine over deletion (replaces "Safety Protocol Before Deleting Anything")
 
-Agents MUST NOT delete files or directories without following this protocol:
+**This section replaces the prior "Safety Protocol Before Deleting Anything" entirely.** The full quarantine-only protocol lives in `contracts/repo-sanitation.md §6.2`. Summary:
 
-1. **Check git history** — does anything in the last 30 days reference this file?
-2. **Check cross-references** — does any other file import, require, or link to this?
-3. **Check test coverage** — does any test reference this file or directory?
-4. **Check config** — does any config file (`tsconfig`, `webpack`, `package.json`, `Cargo.toml`, etc.) reference this path?
-5. **Check CI/CD** — does any workflow file reference this path?
-6. **Ask the user** — on any ambiguity, ask. Deletion is almost always cheap to defer; deleting something load-bearing is expensive to recover from.
+When a sanitation pass identifies a candidate for removal:
 
-**Rule of thumb**: if you're 99% sure it's safe to delete, you should still ask before deleting unless the user has explicitly authorized cleanup autonomy.
+1. **Move it to quarantine** per `repo-sanitation.md §3` with appropriate `reason_category`
+2. **Append a LEDGER entry** per `repo-sanitation.md §3.4`
+3. **Open an Issue** in `Issues/<PROJECT>_ISSUES.md` describing the candidate and why quarantine was chosen
+4. **Continue the task** — do not block on deletion approval; quarantine is the disposition
+
+The agent never reaches a step where it asks "should I delete this?" Quarantine is the answer in 100% of cases. The pre-quarantine checks (git history, cross-references, test coverage, config, CI/CD) remain useful for **deciding what to quarantine**, but they do not gate deletion — they inform the WHY.md.
 
 ---
 
-## User Override
+## User Override (replaces prior "User Override" deletion clause)
 
 If the user says **"don't clean up"**, **"leave it as is"**, **"stop tidying"**, or similar, respect it absolutely. Cleanliness is a default, not a mandate. The user owns the repository and owns the trade-offs.
 
-Similarly, if the user says "clean this up aggressively" or "authorized to delete anything you think is stale", that is a temporary scope expansion for that task only — do not carry it into future sessions.
+If the user says "clean this up aggressively" or "authorized to delete anything you think is stale", that override grants **scope** (what to clean) but **never operation** (deletion vs quarantine). Under v1.6.0, even an explicit user override does not authorize agent deletion. Quarantine is always the operation; the override only expands which items the agent considers cleanup candidates. If Douglas wants something deleted, Douglas deletes it himself.
 
 ---
 
-## Dead Code and Commented-Out Blocks
+## Dead Code and Commented-Out Blocks (replaces prior "Default policy: delete")
 
-### Default policy: delete
+**The prior "Default policy: delete" for dead code is rescinded.** Full quarantine-extract protocol in `contracts/repo-sanitation.md §6.3`. Summary:
 
-Commented-out code is generally dead weight. Git history preserves it. Delete with a clear commit message:
+- **Commented-out code blocks** larger than ~10 lines: extract the block into a quarantined file at `.floyd/quarantine/<date>/dead-code/<original-file>__<line-range>.snippet` with WHY.md, then remove the comment from the active source file.
+- **Unreferenced functions/classes/modules**: same treatment — extract to quarantine, remove from active source.
+- **Load-bearing comments** that explain *why* code is the way it is: leave alone (the distinction below remains authoritative).
 
-```
-refactor: remove commented-out legacy implementation
-
-The old pre-refactor implementation remained as commented blocks
-in src/auth/session.ts. Removing now that the new flow has shipped
-and been in production for 2+ weeks. History is preserved in git.
-```
+The agent's commit message references the quarantine path, not "deleted dead code".
 
 ### Exception: explanatory comments
 
-Do NOT delete comments that explain **why** code is the way it is. Delete only comments that are dead **code**. The distinction matters:
+Do NOT touch comments that explain **why** code is the way it is. Quarantine only dead **code** snippets; leave load-bearing prose comments alone. The distinction matters:
 
-**Dead code** (delete):
+**Dead code** (extract → quarantine → remove from active source):
 ```
 // function oldParse(input) {
 //   return input.split(',').map(s => s.trim());
 // }
 ```
 
-**Load-bearing comment** (keep):
+**Load-bearing comment** (keep, do not touch):
 ```
 // NOTE: we use a manual split here instead of a regex because the
 // V8 regex engine has a pathological case for this input shape.
@@ -467,22 +465,23 @@ function parse(input) { ... }
 
 ## Relationship to Other Contracts
 
+- **`repo-sanitation.md`** — authoritative on removal flows. This contract's cleanup triggers, dead-code handling, user override semantics, and safety protocol all defer to `repo-sanitation.md §3` (quarantine), §6.2 (quarantine over deletion), §6.3 (dead code), and §8.2 (user override).
 - **`repo-structure.md`** — together define "where files go and what doesn't belong"
 - **`document-management.md`** — anti-cruft rules for documents specifically; this contract covers everything else
 - **`git-discipline.md`** — pre-commit checklist includes secret hygiene, which is the most critical hygiene rule
-- **`execution-contract.md`** — evidence rules apply to cleanup: don't claim "cleaned up" without evidence of what was removed
+- **`execution-contract.md`** — evidence rules apply to cleanup: don't claim "cleaned up" without evidence of what was quarantined
 
 ---
 
-## Enforcement Posture (v1.3.0)
+## Enforcement Posture (v1.6.0)
 
-This contract is **advisory** in v1.3.0. Agents should apply these rules proactively, but nothing blocks a commit for hygiene violations. v1.4.0 will add:
+This contract is **advisory** in v1.6.0. Agents apply these rules proactively, but nothing blocks a commit for hygiene violations at the contract layer. v1.6.1 adds:
 
-- `bootstrap.sh --verify-hygiene [dir]` — scans a project for hygiene violations and reports
-- Optional pre-commit hook for secret scanning
-- Optional CI integration for gitignore baseline checking
+- **PreToolUse no-delete hook** — pattern-matches deletion commands (`rm`, `rm -rf`, `git clean`, `unlink`, `os.remove`, `shutil.rmtree`, `fs.unlink`, `Remove-Item`) at the harness layer and blocks them with a pointer to `floyd-quarantine`
+- **`floyd-quarantine` helper** — atomic move + WHY.md authoring + LEDGER append, callable as `floyd-quarantine <path> --reason <category> --note "<one-liner>"`
+- **SessionStart bootstrap** — runs the daily routine A→F from `repo-sanitation.md §7` mechanically before the session does any other work
 
-Until v1.4.0 ships, agents are the primary enforcement mechanism. Use this contract as your checklist on every task.
+Until v1.6.1 ships, agents are the primary enforcement mechanism. Use this contract and `repo-sanitation.md` as the runtime checklist on every task.
 
 ---
 

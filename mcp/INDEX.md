@@ -24,7 +24,7 @@ Project-level FLOYD.md declares which MCPs that project actually needs.
 | floyd-git | 8 | Git operations with safety checks |
 | floyd-browser | 9 | Browser automation |
 
-### Third-Party (via Claude Code MCP integrations)
+### Third-Party (via configured MCP integrations)
 
 | Server | Purpose |
 |---|---|

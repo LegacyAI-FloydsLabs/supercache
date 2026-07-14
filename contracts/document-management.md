@@ -1,11 +1,13 @@
 # Document Management Contract
-**Version:** 1.3.0
-**Governance:** .supercache/ v1.3.0
+**Version:** 1.7.2
+**Governance:** .supercache/ v1.7.2
 **Owner:** Douglas Talley / Legacy AI
 
 This contract governs what documents agents create, where those documents live, how they are named, and how they are maintained over time. It is the authority for document lifecycle and anti-cruft enforcement.
 
 It is READ-ONLY. The sole write path: Douglas Talley → GitHub PR → merge → git pull.
+
+> **v1.6.0 supersession notice.** All removal flows in this contract route through `contracts/repo-sanitation.md`. The previous "Delete" step of the document lifecycle is replaced by **Quarantine** per `repo-sanitation.md §3`. Agents do not delete documents — they move them to `<project>/.floyd/quarantine/<YYYY-MM-DD>/<original-relative-path>` with a `WHY.md` companion and an append-only `LEDGER.jsonl` entry. Only Douglas empties quarantine.
 
 ---
 
@@ -40,16 +42,17 @@ Every document type has a canonical location. If an agent is creating a document
 | Project state summary | `SSOT/<PROJECT_NAME>_SSOT.md` | Current state, architecture facts, verification record | Living document, append-only change log |
 | Decisions | `SSOT/decision-log.md` | Architectural decisions with rationale | Append-only, never edit old entries |
 | Issues / bugs / tasks | `Issues/<PROJECT_NAME>_ISSUES.md` | Help-desk ledger with lifecycle | Living document, append-only change log |
-| Per-issue detail | `Issues/NNN-description.md` | Deep detail on a single issue when the ledger row isn't enough | Created on demand, closed/archived when resolved |
-| Session handoffs | `.floyd/HANDOFF_YYYY-MM-DD.md` | Agent-to-agent session state | Ephemeral; delete after consumed by next session |
-| Agent scratch | `.floyd/scratch/*` | Intermediate agent work | Ephemeral; cleanup encouraged |
+| Per-issue detail | `Issues/NNN-description.md` | Deep detail on a single issue when the ledger row isn't enough | Created on demand, archived or quarantined when resolved |
+| Session handoffs | `.floyd/HANDOFF_YYYY-MM-DD.md` | Agent-to-agent session state | Ephemeral; **quarantine** after consumed by next session |
+| Agent scratch | `.floyd/scratch/*` | Intermediate agent work | Ephemeral; **quarantine** on cleanup (never delete) |
 | Migration records | `SSOT/migration-plans/<DATE>-<DESCRIPTION>/` | Multi-document migration plans (per `contracts/repo-structure.md`) | Persistent for the duration of the migration; archived after completion |
 | User-facing session records | `~/Documents/` on the user's machine | Records of significant sessions/migrations for the user's reference | User owned; agents write with explicit request only |
+| Shared agent reports | `/Volumes/Storage/Floyd Docs/Reports/<YYYY-MM-DDTHH-MM>_<topic-slug>/report.md` | Long-form reports written for Douglas; cloud-backed via Google Drive | Append-only; directories immutable after write. See Shared Agent Deposits Tier below. |
+| Shared agent research | `/Volumes/Storage/Floyd Docs/Research/<YYYY-MM-DDTHH-MM>_<topic-slug>/research.md` | Research outputs written for Douglas; cloud-backed via Google Drive | Append-only; directories immutable after write. See Shared Agent Deposits Tier below. |
 | API reference (generated) | `docs/api/` | Auto-generated API docs | Regenerated, never hand-edited |
 | Change log (release notes) | `CHANGELOG.md` at repo root | User-facing release history | Append-only at the top (newest first) |
 | License | `LICENSE` at repo root | Legal | Rarely changes |
 | Governance (FLOYD.md) | project root `FLOYD.md` | Legacy AI canonical per-project spec | Created by `bootstrap.sh --init`; edited as project evolves |
-| Governance (CLAUDE.md) | project root `CLAUDE.md` | Claude-specific adapter (optional) | Created by `bootstrap.sh --add-claude`; edited rarely |
 
 If a document type isn't in the table above, default to **not creating it** unless the user asks.
 
@@ -81,7 +84,6 @@ Every governed project has (at minimum):
 ```
 project/
 ├── FLOYD.md                             # Canonical project spec
-├── CLAUDE.md                            # Optional Claude adapter
 ├── SSOT/
 │   └── <PROJECT_NAME>_SSOT.md           # Project state + verification record
 └── Issues/
@@ -198,7 +200,7 @@ Legacy AI maintains a **read-only reference library** at `/Volumes/SanDisk1Tb/re
 
 ### Rules
 
-1. **Read-only**: agents MUST NOT write to, edit, or delete anything under `/Volumes/SanDisk1Tb/reference/`
+1. **Read-only**: agents MUST NOT write to, edit, or quarantine anything under `/Volumes/SanDisk1Tb/reference/`
 2. **Updates**: content is refreshed by re-scraping from upstream (not by editing in place)
 3. **Consult the INDEX first**: before diving into any specific subfolder, read the INDEX.md to find what you need
 4. **Prefer canonical_sources over scraped_repos** when authoritative docs exist (e.g., Python PEPs over awesome-python when the question is about a specific PEP)
@@ -216,9 +218,52 @@ Legacy AI maintains a **read-only reference library** at `/Volumes/SanDisk1Tb/re
 
 ---
 
+## Shared Agent Deposits Tier
+
+Legacy AI maintains a **shared, cloud-backed deposit location** at `/Volumes/Storage/Floyd Docs/` for long-form agent-written output (reports, research) that is primarily for Douglas to consult. It is Google Drive–backed, so content is available across devices and survives local drive changes.
+
+### Structure
+
+```
+/Volumes/Storage/Floyd Docs/
+├── FLOYD.md                                # Scoped governance for this folder (on-request)
+├── Reports/
+│   └── <YYYY-MM-DDTHH-MM>_<topic-slug>/
+│       ├── report.md                       # Primary artifact
+│       └── *                               # Supporting files (optional)
+└── Research/
+    └── <YYYY-MM-DDTHH-MM>_<topic-slug>/
+        ├── research.md                     # Primary artifact
+        └── *                               # Supporting files (optional)
+```
+
+### Rules
+
+1. **Append-only (MUST):** Once a `<YYYY-MM-DDTHH-MM>_<topic-slug>/` directory exists, agents MUST NOT silently rewrite its contents. Reports and research are historical records. If a later artifact supersedes an earlier one, create a new dated directory and link forward from the old one.
+2. **Naming (MUST):** New artifact directories MUST use ISO 8601 timestamp + slug: `<YYYY-MM-DDTHH-MM>_<topic-slug>/`. Primary files MUST be named `report.md` (for Reports) or `research.md` (for Research).
+3. **Scope (MUST):** Use `Reports/` for long-form status, analysis, or summary output intended for Douglas to read. Use `Research/` for investigation findings, comparative analysis, or reference gathering. Ad-hoc notes, scratch, and session handoffs do NOT belong here — they belong in `.floyd/` within the relevant project.
+4. **Governance (MUST):** The Floyd Docs-specific `FLOYD.md` at the folder root is the scoped authority for this location. It is invoked on request, not automatically. Cross-repo document rules still live in this contract.
+5. **No secrets (MUST NOT):** Never deposit credentials, API keys, or sensitive configuration here. The Google Drive backing means content may sync to cloud caches.
+
+### What belongs here vs. what doesn't
+
+| Belongs | Does NOT belong |
+|---|---|
+| Reports written for Douglas | Scratch / in-progress agent work |
+| Research findings and comparisons | Session handoffs (use `.floyd/`) |
+| Long-form analysis output | Secrets, credentials, tokens |
+| Migration / audit records for Douglas | Per-project documentation (use the project repo) |
+| Snapshots of investigations | Arbitrary file dumps |
+
+### Relation to `~/Documents/`
+
+`~/Documents/` holds **user-facing session records** that belong to Douglas personally and live only on his Mac. Floyd Docs holds **shared agent deposits** that are cloud-backed and available to all agents across sessions. The two are complementary, not duplicative.
+
+---
+
 ## Forbidden Document Patterns
 
-These patterns are disallowed regardless of context:
+These patterns are disallowed regardless of context. **When an agent encounters one of these in an existing project, the disposition is `quarantine` per `contracts/repo-sanitation.md §3` — never delete.**
 
 ### At project root
 
@@ -242,12 +287,12 @@ These patterns are disallowed regardless of context:
 1. **Create** — only when needed, in the right location, with the right name
 2. **Update** — prefer editing existing documents over creating parallel versions. If you need a new version, archive the old one (`archive/old-name-2026-04-15.md`) and replace
 3. **Archive** — move superseded documents to `archive/` subfolder or `.floyd/archive/` when they still have historical value
-4. **Delete** — remove fully ephemeral artifacts (session handoffs after consumed, scratch after cleanup, intermediate plans after completion)
+4. **Quarantine** — for fully ephemeral artifacts (consumed session handoffs, scratch after cleanup, intermediate plans after completion), the agent **moves the document to `<project>/.floyd/quarantine/<YYYY-MM-DD>/<original-relative-path>`** with a `WHY.md` companion and a `LEDGER.jsonl` append. The full quarantine protocol is `contracts/repo-sanitation.md §3`. Agents do not delete.
 
-### Archival vs deletion
+### Archival vs quarantine
 
-- **Archive** if: the document has historical value (migration plans, post-mortems, old decisions that explain why current state is what it is)
-- **Delete** if: the document is purely ephemeral (session handoffs, scratch notes, intermediate plans, temporary status files)
+- **Archive** if: the document has historical value (migration plans, post-mortems, old decisions that explain why current state is what it is). Archive lives **inside** the project repo as a normal directory and is checked into git.
+- **Quarantine** if: the document is purely ephemeral (session handoffs, scratch notes, intermediate plans, temporary status files). Quarantine lives in `.floyd/quarantine/<YYYY-MM-DD>/` (which is gitignored as part of `.floyd/`) and waits for Douglas to decide between Restore, Archive, or Purge.
 
 ---
 
@@ -265,7 +310,7 @@ These files are owned by the user and live outside any project repo. They:
 - Capture the **why** behind architectural decisions that aren't fully captured in commit messages
 - Document lessons learned and future work
 
-When creating such a file, structure it so that a future Claude session (or future Douglas) can pick up from it without the session context. Include:
+When creating such a file, structure it so that a future agent session (or future Douglas) can pick up from it without the session context. Include:
 
 - What the session accomplished
 - What decisions were made and why
@@ -277,6 +322,7 @@ When creating such a file, structure it so that a future Claude session (or futu
 
 ## Relationship to Other Contracts
 
+- **`repo-sanitation.md`** — authoritative on removal flows. The Quarantine step in this contract's lifecycle defers entirely to `repo-sanitation.md §3` for the protocol.
 - **`repo-structure.md`** — defines where project directories go; this contract defines where documents within those directories go
 - **`repo-hygiene.md`** — works together to prevent document cruft from accumulating in repos
 - **`git-discipline.md`** — governs how documents are committed and what can be in commit messages
@@ -284,9 +330,9 @@ When creating such a file, structure it so that a future Claude session (or futu
 
 ---
 
-## Enforcement Posture (v1.3.0)
+## Enforcement Posture (v1.6.0)
 
-This contract is **advisory** in v1.3.0. Agents should follow it; violations should be flagged. Hard enforcement (a `bootstrap.sh --verify-docs` command that scans for forbidden patterns) is deferred to v1.4.0.
+This contract is **advisory** in v1.6.0. Agents follow it; violations are flagged to Douglas via `Issues/<PROJECT_NAME>_ISSUES.md`. Hard mechanical enforcement (a PreToolUse hook that blocks deletion commands and a `floyd-quarantine` helper that performs the move + WHY.md + LEDGER.jsonl atomically) ships in **v1.6.1**. Until v1.6.1 ships, agents are the primary enforcement mechanism — use this contract and `repo-sanitation.md` as the runtime checklist on every task.
 
 ---
 

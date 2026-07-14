@@ -1,0 +1,43 @@
+{
+    "project_name": ".supercache",
+    "completion_percentage": 100,
+    "tech_stack": ["Bash", "Markdown", "YAML"],
+    "complexity_score": 2,
+    "team_size_minimum": 9,
+    "go_to_market_timeline": "1-2 weeks",
+    "industry_vertical": "Developer Tools",
+    "business_model": "Internal Tool",
+    "technical_debt": 22,
+    "scalability_needs": "low",
+    "target_users": "AI agents operating under Legacy AI governance",
+    "key_features": [
+        "Project bootstrapping",
+        "Execution contracts",
+        "Port allocation registry",
+        "Model routing policies",
+        "Voice generation policies"
+    ],
+    "risks": [
+        "Agents ignoring read-only constraints",
+        "Missing automated tests for bash scripts"
+    ],
+    "_evidence": {
+        "project_name": "basename $(pwd) is .supercache",
+        "completion_percentage": "Method C: ~30 files providing complete active governance logic; actively used in production -> 100%",
+        "tech_stack": "Directory contents: .sh files, .md files, .yaml manifests -> Bash, Markdown, YAML",
+        "complexity_score": "Files: ~30 -> 4, Deps: 0 -> 1, Arch: flat -> 1, State: none -> 1, Auth: none -> 1, Concurrency: none -> 1, Data: flat -> 1. Avg: 1.4 -> 2",
+        "team_size_minimum": "completion=100% -> base 10; complexity=2 (<=3) -> subtract 1 -> 9",
+        "go_to_market_timeline": "completion=100% -> 1-2 weeks",
+        "industry_vertical": "Directory named .supercache governing software development -> Developer Tools",
+        "business_model": "Governance layer for internal use -> Internal Tool",
+        "technical_debt": "TODOs: 15 -> 50, Tests: none -> 100. Others clean (0). Avg: 150/7 = 21.4 -> 22",
+        "scalability_needs": "Local file reads -> low",
+        "target_users": "agent-contract.md mentions 'every AI agent operating under Legacy AI governance' -> AI agents",
+        "key_features": "contracts/ and manifests/ directories contain rules and YAML configs",
+        "risks": "READONLY file warns about corruption; no Tests/ directory found"
+    },
+    "_verified": true,
+    "_critic_rounds": 3,
+    "_last_verified": "2026-05-03T02:00:00Z",
+    "_verified_by": "floyd"
+}
